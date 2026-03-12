@@ -1,0 +1,17 @@
+{
+	"/": [],
+	"/admin": [],
+	"/api/choice": [
+		"src/routes/api/choice/+server.ts"
+	],
+	"/api/events": [
+		"src/routes/api/events/+server.ts"
+	],
+	"/api/join": [
+		"src/routes/api/join/+server.ts"
+	],
+	"/api/resolve": [
+		"src/routes/api/resolve/+server.ts"
+	],
+	"/play": []
+}
