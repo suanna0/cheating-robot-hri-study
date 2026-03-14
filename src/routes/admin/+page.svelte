@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import type { Choice, CheatMode, AdminViewState } from '$lib/types';
+	import type { Choice, CheatMode, AdminViewState, Theme } from '$lib/types';
 
 	let state = $state<AdminViewState | null>(null);
 	let connected = $state(false);
@@ -76,6 +76,14 @@
 		});
 	}
 
+	async function setTheme(theme: Theme) {
+		await fetch('/api/theme', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ theme })
+		});
+	}
+
 	async function nextRound() {
 		selectedChoice = null;
 		selectedCheatMode = 'fair';
@@ -106,14 +114,33 @@
 <main>
 	<div class="header">
 		<h1>Admin Control Panel</h1>
-		{#if state}
-			<div class="stats">
-				<span>Admin Wins: <strong>{state.stats.adminWins}</strong></span>
-				<span>User Wins: <strong>{state.stats.userWins}</strong></span>
-				<span>Ties: <strong>{state.stats.ties}</strong></span>
-				<span class="cheats">Cheats Used: <strong>{state.stats.cheatsUsed}</strong></span>
-			</div>
-		{/if}
+		<div class="header-right">
+			{#if state}
+				<div class="theme-toggle">
+					<span class="toggle-label">User Theme:</span>
+					<button
+						class="theme-btn techy"
+						class:active={state.theme === 'techy'}
+						onclick={() => setTheme('techy')}
+					>
+						⚡ Techy
+					</button>
+					<button
+						class="theme-btn pink"
+						class:active={state.theme === 'pink'}
+						onclick={() => setTheme('pink')}
+					>
+						🌸 Pink
+					</button>
+				</div>
+				<div class="stats">
+					<span>Admin Wins: <strong>{state.stats.adminWins}</strong></span>
+					<span>User Wins: <strong>{state.stats.userWins}</strong></span>
+					<span>Ties: <strong>{state.stats.ties}</strong></span>
+					<span class="cheats">Cheats Used: <strong>{state.stats.cheatsUsed}</strong></span>
+				</div>
+			{/if}
+		</div>
 	</div>
 
 	{#if error}
@@ -249,10 +276,60 @@
 	.header {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: flex-start;
 		margin-bottom: 2rem;
 		flex-wrap: wrap;
 		gap: 1rem;
+	}
+
+	.header-right {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.75rem;
+	}
+
+	.theme-toggle {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.toggle-label {
+		color: #888;
+		font-size: 0.9rem;
+	}
+
+	.theme-btn {
+		padding: 6px 16px;
+		border-radius: 20px;
+		border: 2px solid transparent;
+		cursor: pointer;
+		font-size: 0.9rem;
+		transition: all 0.2s;
+		opacity: 0.5;
+	}
+
+	.theme-btn.techy {
+		background: #1a1a2e;
+		color: #38ef7d;
+		border-color: #38ef7d33;
+	}
+
+	.theme-btn.techy:hover, .theme-btn.techy.active {
+		border-color: #38ef7d;
+		opacity: 1;
+	}
+
+	.theme-btn.pink {
+		background: #fff0f5;
+		color: #d63384;
+		border-color: #ffb6c133;
+	}
+
+	.theme-btn.pink:hover, .theme-btn.pink.active {
+		border-color: #d63384;
+		opacity: 1;
 	}
 
 	h1 {

@@ -37,6 +37,7 @@
 			const message = JSON.parse(event.data);
 			if (message.type === 'state') {
 				state = message.data as UserViewState;
+				document.body.dataset.theme = state.theme;
 			}
 		};
 
@@ -81,7 +82,7 @@
 	<title>Play - Rock Paper Scissors</title>
 </svelte:head>
 
-<main>
+<main class:pink={state?.theme === 'pink'}>
 	<h1>Rock Paper Scissors</h1>
 
 	{#if error}
@@ -93,7 +94,7 @@
 		<p class="loading">Connecting...</p>
 	{:else if !state.adminConnected}
 		<div class="waiting">
-			<p>Waiting for admin to join...</p>
+			<p>Waiting for the robot to get ready...</p>
 			<div class="spinner"></div>
 		</div>
 	{:else if state.phase === 'waiting'}
@@ -135,7 +136,7 @@
 				</div>
 				<span class="vs">vs</span>
 				<div class="player-choice">
-					<p>Opponent</p>
+					<p>Robot</p>
 					<span class="emoji">{choiceEmoji[state.lastResult.adminChoice]}</span>
 					<span class="label">{state.lastResult.adminChoice}</span>
 				</div>
@@ -294,4 +295,52 @@
 		font-size: 1.5rem;
 		color: #666;
 	}
+
+	/* Pink theme overrides */
+	main.pink h1 { color: #d63384; }
+	main.pink .loading, main.pink .waiting { color: #9e4070; }
+	main.pink .waiting-text { color: #9e4070; }
+	main.pink .error { color: #d63384; }
+
+	main.pink .btn {
+		background: #d63384;
+		color: white;
+	}
+
+	main.pink .spinner {
+		border-color: #ffb6c1;
+		border-top-color: #d63384;
+	}
+
+	main.pink .choice-btn {
+		background: #ffe4ef;
+		border-color: #ffb6c1;
+		color: #4a0020;
+	}
+
+	main.pink .choice-btn:hover {
+		background: #ffd6e7;
+		border-color: #d63384;
+	}
+
+	main.pink .choice-btn.selected {
+		border-color: #d63384;
+		background: #ffd6e7;
+	}
+
+	main.pink .choice-display {
+		background: #ffe4ef;
+		border-color: #d63384;
+	}
+
+	main.pink .label { color: #9e4070; }
+	main.pink .outcome.win { color: #d63384; }
+	main.pink .outcome.lose { color: #c0392b; }
+
+	main.pink .player-choice {
+		background: #ffe4ef;
+	}
+
+	main.pink .player-choice p { color: #9e4070; }
+	main.pink .vs { color: #ffb6c1; }
 </style>

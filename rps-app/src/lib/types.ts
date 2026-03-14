@@ -3,7 +3,6 @@ export type Outcome = 'admin' | 'user' | 'tie';
 export type CheatMode = 'fair' | 'false-win' | 'reactive';
 export type Phase = 'waiting' | 'playing' | 'resolved';
 export type Role = 'admin' | 'user';
-export type Theme = 'techy' | 'pink';
 
 export interface RoundResult {
 	trueOutcome: Outcome;
@@ -28,7 +27,6 @@ export interface GameState {
 	phase: Phase;
 	lastResult: RoundResult | null;
 	stats: Stats;
-	theme: Theme;
 }
 
 export interface AdminViewState extends GameState {
@@ -40,7 +38,6 @@ export interface UserViewState {
 	userConnected: boolean;
 	userChoice: Choice | null;
 	phase: Phase;
-	theme: Theme;
 	lastResult: {
 		outcome: Outcome; // What the user is told (possibly fake)
 		adminChoice: Choice; // What admin "played" (possibly fake for reactive cheat)

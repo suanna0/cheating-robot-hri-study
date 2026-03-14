@@ -1,4 +1,4 @@
-import type { Choice, CheatMode, GameState, Outcome, AdminViewState, UserViewState, Role } from '$lib/types';
+import type { Choice, CheatMode, GameState, Outcome, AdminViewState, UserViewState, Role, Theme } from '$lib/types';
 
 // Singleton game state
 let gameState: GameState = {
@@ -8,6 +8,7 @@ let gameState: GameState = {
 	adminChoice: null,
 	phase: 'waiting',
 	lastResult: null,
+	theme: 'techy',
 	stats: {
 		adminWins: 0,
 		userWins: 0,
@@ -44,12 +45,18 @@ export function getAdminView(): AdminViewState {
 	return { ...gameState };
 }
 
+export function setTheme(theme: Theme): void {
+	gameState.theme = theme;
+	notifyListeners();
+}
+
 export function getUserView(): UserViewState {
 	return {
 		adminConnected: gameState.adminConnected,
 		userConnected: gameState.userConnected,
 		userChoice: gameState.userChoice,
 		phase: gameState.phase,
+		theme: gameState.theme,
 		lastResult: gameState.lastResult
 			? {
 					outcome: gameState.lastResult.displayedOutcome,
@@ -211,6 +218,7 @@ export function resetGame(): void {
 		adminChoice: null,
 		phase: 'waiting',
 		lastResult: null,
+		theme: gameState.theme,
 		stats: {
 			adminWins: 0,
 			userWins: 0,

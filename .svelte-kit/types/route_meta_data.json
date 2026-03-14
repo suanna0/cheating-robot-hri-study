@@ -13,5 +13,8 @@
 	"/api/resolve": [
 		"src/routes/api/resolve/+server.ts"
 	],
+	"/api/theme": [
+		"src/routes/api/theme/+server.ts"
+	],
 	"/play": []
 }

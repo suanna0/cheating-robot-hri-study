@@ -24,4 +24,9 @@
 	:global(*) {
 		box-sizing: border-box;
 	}
+
+	:global(body[data-theme='pink']) {
+		background: #fff0f5;
+		color: #4a0020;
+	}
 </style>
