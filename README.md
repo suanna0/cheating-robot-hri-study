@@ -1,8 +1,17 @@
 # cheating-robot-hri-study
-Final Project for 16-467 (S26)
+
+**Final Project for 16-467 (S26)**
+Suanna Zhong (suannaz) · Eileen Jung (eileenj) · Lily Qin (lilyq) · Hyeyoon Song (hyeyoons)
 
 **We are replicating this paper:**
 Short, E., Hart, J., Vu, M., & Scassellati, B. (2010). "No fair!! An interaction with a cheating robot." *2010 5th ACM/IEEE International Conference on Human-Robot Interaction (HRI)*, Osaka, Japan, pp. 219–226. https://doi.org/10.1109/HRI.2010.5453193
+
+We created a simple web server that supports two players playing a game of 
+rock paper scissors. There is an admin and a user, where the admin can see the 
+player’s moves. The admin can also control the cheating protocol, mimicking 
+the Wizard of Oz method in the original study. The site can be accessed anywhere 
+with internet access but for consistency, we will use two laptops for 
+participants.
 
 # Modifications
 
@@ -17,11 +26,4 @@ Examining the way the robot’s perceived gender influences the way users react 
 	- Two Likert-scale questions: How well did Nico play the game?, Would you like to play rock, paper, scissors with Nico again?  
 	- One open-ended question: Did anything about Nico’s behavior seem unusual? What?
 5. We will then analyze the results of the survey, each of our group members coding the qualitative data from the open ended question into a sense of trustworthiness in each of the groups.
-
-We created a simple web server that supports two players playing a game of 
-rock paper scissors. There is an admin and a user, where the admin can see the 
-player’s moves. The admin can also control the cheating protocol, mimicking 
-the Wizard of Oz method in the original study. The site can be accessed anywhere 
-with internet access but for consistency, we will use two laptops for 
-participants.
 
