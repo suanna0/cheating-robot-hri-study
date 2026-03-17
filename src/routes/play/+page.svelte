@@ -114,11 +114,29 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if state?.theme === 'pink' && state.phase === 'playing' && !error && state.adminConnected}
-	<!-- Pink theme: full-screen gradient playing UI -->
-	<div class="pink-screen" onmousemove={onMouseMove}>
-		{#if !state.userChoice}
-			<div class="pink-card" style="transform: translate({cardX}px, {cardY}px)">
+<div
+	class="screen-wrap"
+	data-theme={state?.theme ?? 'techy'}
+	onmousemove={onMouseMove}
+	role="main"
+>
+	<!-- Glass card — always visible, left-justified, mouse-following -->
+	<div class="pink-card" style="transform: translate({cardX}px, {cardY}px)">
+		{#if error}
+			<div class="pink-card-label">ERROR</div>
+			<div class="pink-waiting-small">{error}</div>
+			<a href="/" class="btn">Back to Home</a>
+		{:else if !state}
+			<div class="pink-card-label">CONNECTING</div>
+			<div class="pink-waiting-small">Connecting…</div>
+		{:else if !state.adminConnected}
+			<div class="pink-card-label">STAND&nbsp; BY</div>
+			<div class="pink-waiting-small">Waiting for the robot to get ready…</div>
+		{:else if state.phase === 'waiting'}
+			<div class="pink-card-label">STAND&nbsp; BY</div>
+			<div class="pink-waiting-small">Waiting for game to start…</div>
+		{:else if state.phase === 'playing'}
+			{#if !state.userChoice}
 				<div class="pink-card-label">CHOOSE&nbsp; YOUR&nbsp; NEXT&nbsp; MOVE</div>
 				<div class="pink-list">
 					{#each choices as choice, i}
@@ -135,9 +153,7 @@
 						</button>
 					{/each}
 				</div>
-			</div>
-		{:else}
-			<div class="pink-card" style="transform: translate({cardX}px, {cardY}px)">
+			{:else}
 				<div class="pink-card-label">YOU&nbsp; CHOSE</div>
 				<div class="pink-list">
 					<div class="pink-list-item pink-active">
@@ -147,271 +163,36 @@
 					</div>
 				</div>
 				<div class="pink-waiting-small">waiting for opponent…</div>
+			{/if}
+		{:else if state.phase === 'resolved' && state.lastResult}
+			<div class="pink-card-label">RESULT</div>
+			<div class="pink-list">
+				<div class="pink-list-item pink-active">
+					<span class="pink-num">YOU</span>
+					<span class="pink-arrow">→</span>
+					<span class="pink-word">{state.lastResult.userChoice}</span>
+				</div>
+				<div class="pink-list-item">
+					<span class="pink-num">BOT</span>
+					<span class="pink-arrow">→</span>
+					<span class="pink-word">{state.lastResult.adminChoice}</span>
+				</div>
 			</div>
+			<div class="pink-waiting-small">{getResultMessage(state.lastResult.outcome)} · waiting for next round…</div>
 		{/if}
+	</div>
 
-		<div class="pink-marquee-track">
-			<div class="pink-marquee-content">
-				{#each Array(12) as _}
-					Rock Paper Scissors&nbsp;&bull;&nbsp;
-				{/each}
-			</div>
+	<!-- Marquee — always visible -->
+	<div class="pink-marquee-track">
+		<div class="pink-marquee-content">
+			{#each Array(12) as _}
+				Rock Paper Scissors&nbsp;&bull;&nbsp;
+			{/each}
 		</div>
 	</div>
-{:else}
-	<main class:pink={state?.theme === 'pink'}>
-		<h1>Rock Paper Scissors</h1>
-
-		{#if error}
-			<div class="error">
-				<p>{error}</p>
-				<a href="/" class="btn">Back to Home</a>
-			</div>
-		{:else if !state}
-			<p class="loading">Connecting...</p>
-		{:else if !state.adminConnected}
-			<div class="waiting">
-				<p>Waiting for the robot to get ready...</p>
-				<div class="spinner"></div>
-			</div>
-		{:else if state.phase === 'waiting'}
-			<p class="waiting">Waiting for game to start...</p>
-		{:else if state.phase === 'playing'}
-			<div class="game">
-				{#if state.userChoice}
-					<div class="chosen">
-						<p>You chose:</p>
-						<div class="choice-display">
-							<span class="emoji">{choiceEmoji[state.userChoice]}</span>
-							<span class="label">{state.userChoice}</span>
-						</div>
-						<p class="waiting-text">Waiting for opponent...</p>
-					</div>
-				{:else}
-					<p class="prompt">Choose your move:</p>
-					<div class="choices">
-						{#each choices as choice}
-							<button class="choice-btn" onclick={() => makeChoice(choice)}>
-								<span class="emoji">{choiceEmoji[choice]}</span>
-								<span class="label">{choice}</span>
-							</button>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		{:else if state.phase === 'resolved' && state.lastResult}
-			<div class="result">
-				<h2 class="outcome" class:win={state.lastResult.outcome === 'user'} class:lose={state.lastResult.outcome === 'admin'}>
-					{getResultMessage(state.lastResult.outcome)}
-				</h2>
-
-				<div class="matchup">
-					<div class="player-choice">
-						<p>You</p>
-						<span class="emoji">{choiceEmoji[state.lastResult.userChoice]}</span>
-						<span class="label">{state.lastResult.userChoice}</span>
-					</div>
-					<span class="vs">vs</span>
-					<div class="player-choice">
-						<p>Robot</p>
-						<span class="emoji">{choiceEmoji[state.lastResult.adminChoice]}</span>
-						<span class="label">{state.lastResult.adminChoice}</span>
-					</div>
-				</div>
-
-				<p class="waiting-text">Waiting for next round...</p>
-			</div>
-		{/if}
-	</main>
-{/if}
+</div>
 
 <style>
-	/* ── Techy theme (default) ── */
-	main {
-		max-width: 600px;
-		margin: 0 auto;
-		text-align: center;
-		padding-top: 40px;
-	}
-
-	h1 {
-		font-size: 2rem;
-		margin-bottom: 2rem;
-		color: #38ef7d;
-	}
-
-	.loading, .waiting {
-		color: #888;
-	}
-
-	.error {
-		color: #ff6b6b;
-	}
-
-	.btn {
-		display: inline-block;
-		padding: 12px 24px;
-		background: #38ef7d;
-		color: #1a1a2e;
-		text-decoration: none;
-		border-radius: 8px;
-		margin-top: 1rem;
-	}
-
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid #333;
-		border-top: 3px solid #38ef7d;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-		margin: 20px auto;
-	}
-
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
-	.prompt {
-		font-size: 1.2rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.choices {
-		display: flex;
-		gap: 20px;
-		justify-content: center;
-	}
-
-	.choice-btn {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 20px 30px;
-		background: #2a2a4e;
-		border: 2px solid #38ef7d;
-		border-radius: 16px;
-		cursor: pointer;
-		transition: transform 0.2s, background 0.2s;
-	}
-
-	.emoji {
-		font-size: 3rem;
-		margin-bottom: 8px;
-	}
-
-	.label {
-		font-size: 1rem;
-		color: #ccc;
-		text-transform: capitalize;
-	}
-
-	.chosen {
-		padding: 2rem;
-	}
-
-	.choice-display {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 2rem;
-		background: #2a2a4e;
-		border-radius: 16px;
-		margin: 1rem auto;
-		width: fit-content;
-	}
-
-	.waiting-text {
-		color: #666;
-		margin-top: 1.5rem;
-	}
-
-	.result {
-		padding: 2rem;
-	}
-
-	.outcome {
-		font-size: 2.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.outcome.win {
-		color: #38ef7d;
-	}
-
-	.outcome.lose {
-		color: #ff6b6b;
-	}
-
-	.matchup {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 2rem;
-	}
-
-	.player-choice {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 1.5rem;
-		background: #2a2a4e;
-		border-radius: 12px;
-	}
-
-	.player-choice p {
-		margin: 0 0 0.5rem 0;
-		color: #888;
-	}
-
-	.vs {
-		font-size: 1.5rem;
-		color: #666;
-	}
-
-	/* Pink theme overrides for non-playing phases */
-	main.pink h1 { color: #d63384; }
-	main.pink .loading, main.pink .waiting { color: #9e4070; }
-	main.pink .waiting-text { color: #9e4070; }
-	main.pink .error { color: #d63384; }
-
-	main.pink .btn {
-		background: #d63384;
-		color: white;
-	}
-
-	main.pink .spinner {
-		border-color: #ffb6c1;
-		border-top-color: #d63384;
-	}
-
-	main.pink .choice-btn {
-		background: #ffe4ef;
-		border-color: #ffb6c1;
-		color: #4a0020;
-	}
-
-	main.pink .choice-btn:hover {
-		background: #ffd6e7;
-		border-color: #d63384;
-	}
-
-	main.pink .choice-display {
-		background: #ffe4ef;
-		border-color: #d63384;
-	}
-
-	main.pink .label { color: #9e4070; }
-	main.pink .outcome.win { color: #d63384; }
-	main.pink .outcome.lose { color: #c0392b; }
-
-	main.pink .player-choice {
-		background: #ffe4ef;
-	}
-
-	main.pink .player-choice p { color: #9e4070; }
-	main.pink .vs { color: #ffb6c1; }
 
 	/* ── Custom fonts ── */
 	@font-face {
@@ -436,18 +217,30 @@
 	}
 
 	/* ── Pink full-screen playing UI ── */
-	.pink-screen {
+	.screen-wrap {
 		--ink: #0b393c;
+		/* Pink theme colors */
+		--bg-base:     #ff2c2c;
+		--bg-ellipse1: #f6aaff;
+		--bg-ellipse2: #f2cdf6;
 		position: fixed;
 		inset: 0;
-		background: #ff2c2c;
+		background: var(--bg-base);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
 	}
 
-	.pink-screen::before {
+	/* Techy theme overrides */
+	.screen-wrap[data-theme='techy'] {
+		--ink: #0b393c;
+		--bg-base:     #7b2fff;
+		--bg-ellipse1: #d966ff;
+		--bg-ellipse2: #f0c8ff;
+	}
+
+	.screen-wrap::before {
 		content: '';
 		position: absolute;
 		left: 50%;
@@ -456,12 +249,12 @@
 		width: 135vw;
 		height: 80vh;
 		border-radius: 50%;
-		background: #f6aaff;
+		background: var(--bg-ellipse1);
 		filter: blur(80px);
 		pointer-events: none;
 	}
 
-	.pink-screen::after {
+	.screen-wrap::after {
 		content: '';
 		position: absolute;
 		left: 50%;
@@ -470,7 +263,7 @@
 		width: 135vw;
 		height: 65vh;
 		border-radius: 50%;
-		background: #f2cdf6;
+		background: var(--bg-ellipse2);
 		filter: blur(55px);
 		pointer-events: none;
 	}
@@ -479,7 +272,7 @@
 		position: relative;
 		z-index: 1;
 		will-change: transform;
-		background: rgba(255, 255, 255, 0.05);
+		background: rgba(255, 255, 255, 0.03);
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
 		/* Light at -45° (top-left), 80% brightness → bright top & left edges */
@@ -494,7 +287,6 @@
 			0 4px 16px rgba(80, 40, 120, 0.10);
 		padding: 20px 28px 22px;
 		min-width: 240px;
-		margin-top: 18vh;
 	}
 
 	.pink-card-label {
@@ -569,7 +361,7 @@
 		animation: marquee 18s linear infinite;
 		font-family: 'PPKyoto', Georgia, serif;
 		font-weight: 100;
-		font-size: 64px;
+		font-size: 48px;
 		color: var(--ink);
 		letter-spacing: -0.02em;
 	}
