@@ -112,7 +112,6 @@
 		<header>
 			<div class="header-left">
 				<p class="eyebrow">Control Panel</p>
-				<h1>Rock Paper Scissors</h1>
 			</div>
 			{#if state}
 				<div class="header-right">

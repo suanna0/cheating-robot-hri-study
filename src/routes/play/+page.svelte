@@ -15,6 +15,8 @@
 	let targetY = 0;
 	let rafId: number;
 
+	let cardEl: HTMLDivElement | null = null;
+
 	function onMouseMove(e: MouseEvent) {
 		targetX = (e.clientX - window.innerWidth / 2) * 0.50;
 		targetY = (e.clientY - window.innerHeight / 2) * 0.3;
@@ -116,16 +118,16 @@
 
 <div
 	class="screen-wrap"
-	data-theme={state?.theme ?? 'nico'}
+	data-theme={state?.theme ?? 'nica'}
 	onmousemove={onMouseMove}
 	role="main"
 >
 	<!-- Glass card — always visible, left-justified, mouse-following -->
-	<div class="pink-card" style="transform: translate({cardX}px, {cardY}px)">
+	<div class="pink-card" bind:this={cardEl} style="transform: translate({cardX}px, {cardY}px)">
 		{#if error}
 			<div class="pink-card-label">ERROR</div>
 			<div class="pink-waiting-small">{error}</div>
-			<a href="/" class="btn">Back to Home</a>
+			<a href="/" class="btn">[BACK TO HOME]</a>
 		{:else if !state}
 			<div class="pink-card-label">CONNECTING</div>
 			<div class="pink-waiting-small">Connecting…</div>
@@ -339,6 +341,15 @@
 		letter-spacing: 0.02em;
 	}
 
+
+	.btn {
+		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
+		font-size: 13px;
+		color: var(--ink);
+		text-decoration: none;
+		margin-top: 12px;
+		display: inline-block;
+	}
 
 	.pink-waiting-small {
 		font-family: 'FragmentMono', 'Courier New', Courier, monospace;

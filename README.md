@@ -1,7 +1,10 @@
 # cheating-robot-hri-study
 
 **Final Project for 16-467 (S26)**
-Suanna Zhong (suannaz) · Eileen Jung (eileenj) · Lily Qin (lilyq) · Hyeyoon Song (hyeyoons)
+Suanna Zhong, 
+Eileen Jung, 
+Lily Qin, 
+Hyeyoon Song
 
 **We are replicating this paper:**
 Short, E., Hart, J., Vu, M., & Scassellati, B. (2010). "No fair!! An interaction with a cheating robot." *2010 5th ACM/IEEE International Conference on Human-Robot Interaction (HRI)*, Osaka, Japan, pp. 219–226. https://doi.org/10.1109/HRI.2010.5453193
