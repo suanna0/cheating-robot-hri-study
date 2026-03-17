@@ -10,6 +10,9 @@
 	"/api/join": [
 		"src/routes/api/join/+server.ts"
 	],
+	"/api/reset": [
+		"src/routes/api/reset/+server.ts"
+	],
 	"/api/resolve": [
 		"src/routes/api/resolve/+server.ts"
 	],

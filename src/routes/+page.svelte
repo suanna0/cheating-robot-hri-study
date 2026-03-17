@@ -1,9 +1,26 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 
 	let adminConnected = $state(false);
 	let userConnected = $state(false);
 	let loading = $state(true);
+	let resetting = $state(false);
+
+	async function hardReset() {
+		resetting = true;
+		await fetch('/api/reset', { method: 'POST' });
+		adminConnected = false;
+		userConnected = false;
+		resetting = false;
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (loading) return;
+		if (e.key === '1' && !userConnected) goto('/play');
+		if (e.key === '2' && !adminConnected) goto('/admin');
+		if (e.key === 'r' || e.key === 'R') hardReset();
+	}
 
 	// Cursor-following card
 	let cardX = $state(0);
@@ -39,6 +56,8 @@
 	<title>Rock Paper Scissors</title>
 </svelte:head>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="screen-wrap" onmousemove={onMouseMove} role="main">
 	<div class="pink-card" style="transform: translate({cardX}px, {cardY}px)">
 		<div class="pink-card-label">ROCK · PAPER · SCISSORS</div>
@@ -66,6 +85,11 @@
 					<span class="pink-word">{adminConnected ? 'admin connected' : 'admin'}</span>
 				</a>
 			</div>
+			{#if adminConnected || userConnected}
+				<button class="pink-reset" onclick={hardReset} disabled={resetting}>
+					{resetting ? 'resetting…' : '[reset]'}
+				</button>
+			{/if}
 		{/if}
 	</div>
 
@@ -211,6 +235,27 @@
 		letter-spacing: 0.02em;
 	}
 
+	.pink-reset {
+		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
+		font-size: 13px;
+		color: rgba(80, 60, 100, 0.45);
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		margin-top: 14px;
+		display: block;
+	}
+
+	.pink-reset:hover {
+		color: rgba(80, 60, 100, 0.8);
+	}
+
+	.pink-reset:disabled {
+		cursor: not-allowed;
+		opacity: 0.4;
+	}
+
 	.pink-waiting-small {
 		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
 		font-size: 13px;
@@ -222,11 +267,11 @@
 	.pink-marquee-track {
 		position: absolute;
 		z-index: 1;
-		bottom: 0;
+		bottom: 5px;
 		left: 0;
 		right: 0;
 		overflow: hidden;
-		padding: 14px 0;
+		padding: 0;
 		white-space: nowrap;
 	}
 

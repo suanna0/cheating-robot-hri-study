@@ -102,7 +102,7 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (state?.theme === 'nica' && state.phase === 'playing' && !state.userChoice) {
+		if (state?.phase === 'playing' && !state.userChoice) {
 			if (e.key === '1') makeChoice('rock');
 			if (e.key === '2') makeChoice('paper');
 			if (e.key === '3') makeChoice('scissors');
@@ -362,11 +362,11 @@
 	.pink-marquee-track {
 		position: absolute;
 		z-index: 1;
-		bottom: 0;
+		bottom: 5px;
 		left: 0;
 		right: 0;
 		overflow: hidden;
-		padding: 14px 0;
+		padding: 0;
 		white-space: nowrap;
 	}
 
