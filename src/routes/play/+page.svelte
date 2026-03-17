@@ -16,8 +16,8 @@
 	let rafId: number;
 
 	function onMouseMove(e: MouseEvent) {
-		targetX = (e.clientX - window.innerWidth / 2) * 0.1;
-		targetY = (e.clientY - window.innerHeight / 2) * 0.08;
+		targetX = (e.clientX - window.innerWidth / 2) * 0.50;
+		targetY = (e.clientY - window.innerHeight / 2) * 0.3;
 	}
 
 	const choices: Choice[] = ['rock', 'paper', 'scissors'];
@@ -31,7 +31,7 @@
 		// Start cursor-follow animation loop
 		function tick() {
 			cardX += (targetX - cardX) * 0.06;
-			cardY += (targetY - cardY) * 0.06;
+			cardY += (targetY - cardY) * 0.03;
 			rafId = requestAnimationFrame(tick);
 		}
 		rafId = requestAnimationFrame(tick);
@@ -130,7 +130,7 @@
 							onclick={() => makeChoice(choice)}
 						>
 							<span class="pink-num">[{i + 1}]</span>
-							<span class="pink-arrow">{hoveredChoice === i ? '→' : '\u00a0\u00a0'}</span>
+							<span class="pink-arrow" style="opacity: {hoveredChoice === i ? 1 : 0}">→</span>
 							<span class="pink-word">{choice}</span>
 						</button>
 					{/each}
@@ -296,11 +296,6 @@
 		transition: transform 0.2s, background 0.2s;
 	}
 
-	.choice-btn:hover {
-		transform: scale(1.1);
-		background: #3a3a6e;
-	}
-
 	.emoji {
 		font-size: 3rem;
 		margin-bottom: 8px;
@@ -442,38 +437,69 @@
 
 	/* ── Pink full-screen playing UI ── */
 	.pink-screen {
+		--ink: #0b393c;
 		position: fixed;
 		inset: 0;
-		background: linear-gradient(
-			to bottom,
-			#e84040 0%,
-			#e8407a 40%,
-			#d070c8 70%,
-			#d0a8e8 100%
-		);
+		background: #ff2c2c;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
 	}
 
+	.pink-screen::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		bottom: -25%;
+		transform: translateX(-50%);
+		width: 135vw;
+		height: 80vh;
+		border-radius: 50%;
+		background: #f6aaff;
+		filter: blur(80px);
+		pointer-events: none;
+	}
+
+	.pink-screen::after {
+		content: '';
+		position: absolute;
+		left: 50%;
+		bottom: -22%;
+		transform: translateX(-50%);
+		width: 135vw;
+		height: 65vh;
+		border-radius: 50%;
+		background: #f2cdf6;
+		filter: blur(55px);
+		pointer-events: none;
+	}
+
 	.pink-card {
+		position: relative;
+		z-index: 1;
 		will-change: transform;
-		background: rgba(255, 255, 255, 0.22);
-		backdrop-filter: blur(16px);
-		-webkit-backdrop-filter: blur(16px);
-		border: 1px solid rgba(255, 255, 255, 0.35);
-		border-radius: 14px;
+		background: rgba(255, 255, 255, 0.05);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		/* Light at -45° (top-left), 80% brightness → bright top & left edges */
+		border-top: 0.5px solid rgba(255, 255, 255, 0.9);
+		border-left: 0.5px solid rgba(255, 255, 255, 0.9);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+		border-right: 1px solid rgba(255, 255, 255, 0.3);
+		border-radius: 28px;
+		/* Depth: 72 */
+		box-shadow:
+			0 24px 48px rgba(80, 40, 120, 0.18),
+			0 4px 16px rgba(80, 40, 120, 0.10);
 		padding: 20px 28px 22px;
 		min-width: 240px;
-		/* Position card slightly below center */
 		margin-top: 18vh;
 	}
 
 	.pink-card-label {
 		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
-		font-size: 0.65rem;
-		letter-spacing: 0.12em;
+		font-size: 13px;
 		color: rgba(80, 60, 100, 0.6);
 		margin-bottom: 14px;
 		text-transform: uppercase;
@@ -498,46 +524,42 @@
 
 	.pink-num {
 		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
-		font-size: 0.72rem;
+		font-size: 13px;
 		color: rgba(80, 60, 100, 0.45);
 		min-width: 22px;
 	}
 
 	.pink-arrow {
 		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
-		font-size: 0.85rem;
+		font-size: 13px;
 		color: rgba(50, 40, 80, 0.55);
 		min-width: 14px;
 	}
 
 	.pink-word {
 		font-family: 'Arial Narrow', 'Arial', sans-serif;
-		font-size: 1.1rem;
+		font-size: 24px;
 		font-weight: 400;
-		color: #2d2d4a;
+		color: var(--ink);
 		letter-spacing: 0.02em;
 	}
 
-	.pink-active .pink-word {
-		color: #1a1a3a;
-	}
 
 	.pink-waiting-small {
 		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
-		font-size: 0.65rem;
+		font-size: 13px;
 		color: rgba(80, 60, 100, 0.5);
 		margin-top: 12px;
-		letter-spacing: 0.05em;
 	}
 
 	/* Marquee */
 	.pink-marquee-track {
 		position: absolute;
+		z-index: 1;
 		bottom: 0;
 		left: 0;
 		right: 0;
 		overflow: hidden;
-		background: rgba(220, 180, 240, 0.25);
 		padding: 14px 0;
 		white-space: nowrap;
 	}
@@ -547,9 +569,9 @@
 		animation: marquee 18s linear infinite;
 		font-family: 'PPKyoto', Georgia, serif;
 		font-weight: 100;
-		font-size: 3.2rem;
-		color: rgba(40, 30, 60, 0.55);
-		letter-spacing: 0.01em;
+		font-size: 64px;
+		color: var(--ink);
+		letter-spacing: -0.02em;
 	}
 
 	@keyframes marquee {
