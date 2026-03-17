@@ -3,7 +3,7 @@ export type Outcome = 'admin' | 'user' | 'tie';
 export type CheatMode = 'fair' | 'false-win' | 'reactive';
 export type Phase = 'waiting' | 'playing' | 'resolved';
 export type Role = 'admin' | 'user';
-export type Theme = 'techy' | 'pink';
+export type Theme = 'nico' | 'nica';
 
 export interface RoundResult {
 	trueOutcome: Outcome;

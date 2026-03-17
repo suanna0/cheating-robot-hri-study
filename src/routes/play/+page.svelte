@@ -100,7 +100,7 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (state?.theme === 'pink' && state.phase === 'playing' && !state.userChoice) {
+		if (state?.theme === 'nica' && state.phase === 'playing' && !state.userChoice) {
 			if (e.key === '1') makeChoice('rock');
 			if (e.key === '2') makeChoice('paper');
 			if (e.key === '3') makeChoice('scissors');
@@ -116,7 +116,7 @@
 
 <div
 	class="screen-wrap"
-	data-theme={state?.theme ?? 'techy'}
+	data-theme={state?.theme ?? 'nico'}
 	onmousemove={onMouseMove}
 	role="main"
 >
@@ -226,6 +226,7 @@
 		position: fixed;
 		inset: 0;
 		background: var(--bg-base);
+		transition: background-color 0.3s ease;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -233,7 +234,7 @@
 	}
 
 	/* Techy theme overrides */
-	.screen-wrap[data-theme='techy'] {
+	.screen-wrap[data-theme='nico'] {
 		--ink: #0b393c;
 		--bg-base:     #7b2fff;
 		--bg-ellipse1: #d966ff;
@@ -252,6 +253,7 @@
 		background: var(--bg-ellipse1);
 		filter: blur(80px);
 		pointer-events: none;
+		transition: background-color 0.3s ease;
 	}
 
 	.screen-wrap::after {
@@ -266,6 +268,7 @@
 		background: var(--bg-ellipse2);
 		filter: blur(55px);
 		pointer-events: none;
+		transition: background-color 0.3s ease;
 	}
 
 	.pink-card {

@@ -8,7 +8,7 @@ let gameState: GameState = {
 	adminChoice: null,
 	phase: 'waiting',
 	lastResult: null,
-	theme: 'pink',
+	theme: 'nica',
 	stats: {
 		adminWins: 0,
 		userWins: 0,

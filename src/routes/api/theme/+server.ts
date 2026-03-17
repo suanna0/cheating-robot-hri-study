@@ -5,7 +5,7 @@ import type { Theme } from '$lib/types';
 export async function POST({ request }) {
 	const { theme } = (await request.json()) as { theme: Theme };
 
-	const validThemes: Theme[] = ['techy', 'pink'];
+	const validThemes: Theme[] = ['nico', 'nica'];
 	if (!theme || !validThemes.includes(theme)) {
 		return json({ success: false, error: 'Invalid theme' }, { status: 400 });
 	}

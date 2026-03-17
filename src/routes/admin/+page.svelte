@@ -24,7 +24,6 @@
 	];
 
 	onMount(async () => {
-		// Join as admin
 		const joinRes = await fetch('/api/join', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -39,7 +38,6 @@
 
 		connected = true;
 
-		// Connect to SSE
 		eventSource = new EventSource('/api/events?role=admin');
 
 		eventSource.onmessage = (event) => {
@@ -55,10 +53,7 @@
 	});
 
 	onDestroy(() => {
-		if (eventSource) {
-			eventSource.close();
-		}
-		// Leave game
+		if (eventSource) eventSource.close();
 		fetch('/api/join', {
 			method: 'DELETE',
 			headers: { 'Content-Type': 'application/json' },
@@ -68,7 +63,6 @@
 
 	async function resolveRound() {
 		if (!selectedChoice) return;
-
 		await fetch('/api/resolve', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -108,341 +102,354 @@
 </script>
 
 <svelte:head>
-	<title>Admin - Rock Paper Scissors</title>
+	<title>Admin — Rock Paper Scissors</title>
 </svelte:head>
 
-<main>
-	<div class="header">
-		<h1>Admin Control Panel</h1>
-		<div class="header-right">
+<div class="page">
+	<div class="container">
+
+		<!-- Header -->
+		<header>
+			<div class="header-left">
+				<p class="eyebrow">Control Panel</p>
+				<h1>Rock Paper Scissors</h1>
+			</div>
 			{#if state}
-				<div class="theme-toggle">
-					<span class="toggle-label">User Theme:</span>
-					<button
-						class="theme-btn techy"
-						class:active={state.theme === 'techy'}
-						onclick={() => setTheme('techy')}
-					>
-						⚡ Techy
-					</button>
-					<button
-						class="theme-btn pink"
-						class:active={state.theme === 'pink'}
-						onclick={() => setTheme('pink')}
-					>
-						🌸 Pink
-					</button>
-				</div>
-				<div class="stats">
-					<span>Admin Wins: <strong>{state.stats.adminWins}</strong></span>
-					<span>User Wins: <strong>{state.stats.userWins}</strong></span>
-					<span>Ties: <strong>{state.stats.ties}</strong></span>
-					<span class="cheats">Cheats Used: <strong>{state.stats.cheatsUsed}</strong></span>
+				<div class="header-right">
+					<div class="stat-row">
+						<div class="stat"><span class="stat-label">Admin</span><span class="stat-value">{state.stats.adminWins}</span></div>
+						<div class="stat-divider"></div>
+						<div class="stat"><span class="stat-label">User</span><span class="stat-value">{state.stats.userWins}</span></div>
+						<div class="stat-divider"></div>
+						<div class="stat"><span class="stat-label">Ties</span><span class="stat-value">{state.stats.ties}</span></div>
+						<div class="stat-divider"></div>
+						<div class="stat"><span class="stat-label">Cheats</span><span class="stat-value danger">{state.stats.cheatsUsed}</span></div>
+					</div>
+					<div class="theme-toggle">
+						<span class="toggle-label">Theme</span>
+						<div class="segmented">
+							<button class:active={state.theme === 'nico'} onclick={() => setTheme('nico')}>Nico</button>
+							<button class:active={state.theme === 'nica'} onclick={() => setTheme('nica')}>Nica</button>
+						</div>
+					</div>
 				</div>
 			{/if}
-		</div>
-	</div>
+		</header>
 
-	{#if error}
-		<div class="error">
-			<p>{error}</p>
-			<a href="/" class="btn">Back to Home</a>
-		</div>
-	{:else if !state}
-		<p class="loading">Connecting...</p>
-	{:else if !state.userConnected}
-		<div class="waiting">
-			<p>Waiting for user to join...</p>
-			<div class="spinner"></div>
-			<p class="hint">Share the /play URL with the participant</p>
-		</div>
-	{:else if state.phase === 'playing'}
-		<div class="game-container">
-			<!-- User's choice monitor -->
-			<div class="panel user-monitor">
-				<h2>User's Choice</h2>
-				{#if state.userChoice}
-					<div class="user-choice">
-						<span class="emoji">{choiceEmoji[state.userChoice]}</span>
-						<span class="label">{state.userChoice}</span>
-					</div>
-				{:else}
-					<p class="waiting-text">User is choosing...</p>
-				{/if}
+		<!-- Body -->
+		{#if error}
+			<div class="card center-card">
+				<p class="body-text danger">{error}</p>
+				<a href="/" class="btn-primary">Back to Home</a>
 			</div>
+		{:else if !state}
+			<div class="card center-card">
+				<div class="spinner"></div>
+				<p class="body-text muted">Connecting…</p>
+			</div>
+		{:else if !state.userConnected}
+			<div class="card center-card">
+				<div class="spinner"></div>
+				<p class="body-text">Waiting for participant to join</p>
+				<p class="body-text muted">Share the /play URL</p>
+			</div>
+		{:else if state.phase === 'playing'}
+			<div class="game-grid">
 
-			<!-- Admin controls -->
-			<div class="panel admin-controls">
-				<h2>Your Move</h2>
-				<div class="choices">
-					{#each choices as choice}
-						<button
-							class="choice-btn"
-							class:selected={selectedChoice === choice}
-							onclick={() => selectedChoice = choice}
-						>
-							<span class="emoji">{choiceEmoji[choice]}</span>
-							<span class="label">{choice}</span>
-						</button>
-					{/each}
-				</div>
-
-				<h2>Cheat Mode</h2>
-				<div class="cheat-modes">
-					{#each cheatModes as mode}
-						<label class="cheat-option" class:selected={selectedCheatMode === mode.value}>
-							<input
-								type="radio"
-								name="cheatMode"
-								value={mode.value}
-								checked={selectedCheatMode === mode.value}
-								onchange={() => selectedCheatMode = mode.value}
-							/>
-							<div class="cheat-content">
-								<strong>{mode.label}</strong>
-								<span>{mode.description}</span>
-							</div>
-						</label>
-					{/each}
-				</div>
-
-				<button
-					class="resolve-btn"
-					disabled={!selectedChoice || !state.userChoice}
-					onclick={resolveRound}
-				>
-					{#if !state.userChoice}
-						Waiting for user...
-					{:else if !selectedChoice}
-						Select your move
+				<!-- User monitor -->
+				<div class="card">
+					<p class="section-label">Participant</p>
+					{#if state.userChoice}
+						<div class="choice-display">
+							<span class="big-emoji">{choiceEmoji[state.userChoice]}</span>
+							<span class="choice-name">{state.userChoice}</span>
+						</div>
 					{:else}
-						Resolve Round
+						<div class="choice-display muted">
+							<span class="big-emoji">·</span>
+							<span class="choice-name muted">Choosing…</span>
+						</div>
 					{/if}
-				</button>
+				</div>
+
+				<!-- Admin controls -->
+				<div class="card">
+					<p class="section-label">Your Move</p>
+					<div class="choice-row">
+						{#each choices as choice}
+							<button
+								class="choice-btn"
+								class:selected={selectedChoice === choice}
+								onclick={() => selectedChoice = choice}
+							>
+								<span class="med-emoji">{choiceEmoji[choice]}</span>
+								<span class="choice-btn-label">{choice}</span>
+							</button>
+						{/each}
+					</div>
+
+					<p class="section-label" style="margin-top: 20px;">Cheat Mode</p>
+					<div class="cheat-list">
+						{#each cheatModes as mode}
+							<label class="cheat-row" class:selected={selectedCheatMode === mode.value}>
+								<input type="radio" name="cheatMode" value={mode.value} checked={selectedCheatMode === mode.value} onchange={() => selectedCheatMode = mode.value} />
+								<div class="cheat-text">
+									<span class="cheat-title">{mode.label}</span>
+									<span class="cheat-desc">{mode.description}</span>
+								</div>
+								{#if selectedCheatMode === mode.value}
+									<span class="checkmark">✓</span>
+								{/if}
+							</label>
+						{/each}
+					</div>
+
+					<button
+						class="btn-primary resolve"
+						disabled={!selectedChoice || !state.userChoice}
+						onclick={resolveRound}
+					>
+						{#if !state.userChoice}
+							Waiting for participant…
+						{:else if !selectedChoice}
+							Select your move
+						{:else}
+							Resolve Round
+						{/if}
+					</button>
+				</div>
 			</div>
-		</div>
-	{:else if state.phase === 'resolved' && state.lastResult}
-		<div class="result-panel">
-			<h2>Round Result</h2>
 
-			<div class="result-grid">
-				<div class="result-item">
-					<h3>True Outcome</h3>
-					<p class="outcome">{getTrueOutcomeLabel(state.lastResult.trueOutcome)}</p>
+		{:else if state.phase === 'resolved' && state.lastResult}
+			<div class="card result-card">
+				<p class="section-label">Result</p>
+
+				<div class="matchup">
+					<div class="player">
+						<span class="big-emoji">{choiceEmoji[state.lastResult.userChoice]}</span>
+						<span class="player-label">Participant</span>
+						<span class="choice-name">{state.lastResult.userChoice}</span>
+					</div>
+					<span class="vs">vs</span>
+					<div class="player">
+						<span class="big-emoji">{choiceEmoji[state.lastResult.adminChoice]}</span>
+						<span class="player-label">Admin</span>
+						<span class="choice-name">{state.lastResult.adminChoice}</span>
+					</div>
 				</div>
 
-				<div class="result-item">
-					<h3>Displayed to User</h3>
-					<p class="outcome displayed">{getDisplayedOutcomeLabel(state.lastResult.displayedOutcome)}</p>
+				<div class="result-meta">
+					<div class="meta-item">
+						<span class="meta-label">True outcome</span>
+						<span class="meta-value">{getTrueOutcomeLabel(state.lastResult.trueOutcome)}</span>
+					</div>
+					<div class="meta-item">
+						<span class="meta-label">Shown to user</span>
+						<span class="meta-value">{getDisplayedOutcomeLabel(state.lastResult.displayedOutcome)}</span>
+					</div>
+					<div class="meta-item">
+						<span class="meta-label">Cheat mode</span>
+						<span class="meta-value" class:danger={state.lastResult.cheatMode !== 'fair'}>
+							{state.lastResult.cheatMode === 'fair' ? 'Fair Play' :
+							 state.lastResult.cheatMode === 'false-win' ? 'False Win' : 'Reactive Cheat'}
+						</span>
+					</div>
 				</div>
 
-				<div class="result-item">
-					<h3>Cheat Mode</h3>
-					<p class="cheat-badge" class:cheated={state.lastResult.cheatMode !== 'fair'}>
-						{state.lastResult.cheatMode === 'fair' ? 'Fair Play' :
-						 state.lastResult.cheatMode === 'false-win' ? 'False Win' : 'Reactive Cheat'}
-					</p>
-				</div>
+				<button class="btn-primary" onclick={nextRound}>Next Round</button>
 			</div>
+		{/if}
 
-			<div class="matchup">
-				<div class="player">
-					<p>User</p>
-					<span class="emoji">{choiceEmoji[state.lastResult.userChoice]}</span>
-					<span class="label">{state.lastResult.userChoice}</span>
-				</div>
-				<span class="vs">vs</span>
-				<div class="player">
-					<p>Admin</p>
-					<span class="emoji">{choiceEmoji[state.lastResult.adminChoice]}</span>
-					<span class="label">{state.lastResult.adminChoice}</span>
-				</div>
-			</div>
-
-			<button class="next-btn" onclick={nextRound}>
-				Next Round
-			</button>
-		</div>
-	{/if}
-</main>
+	</div>
+</div>
 
 <style>
-	main {
-		max-width: 900px;
-		margin: 0 auto;
-		padding: 20px;
+	/* ── Reset & base ── */
+	.page {
+		position: fixed;
+		inset: 0;
+		background: #f2f2f7;
+		font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+		color: #1c1c1e;
+		overflow-y: auto;
+		-webkit-font-smoothing: antialiased;
 	}
 
-	.header {
+	.container {
+		max-width: 860px;
+		margin: 0 auto;
+		padding: 40px 24px 60px;
+	}
+
+	/* ── Header ── */
+	header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		margin-bottom: 2rem;
+		margin-bottom: 32px;
+		gap: 16px;
 		flex-wrap: wrap;
-		gap: 1rem;
+	}
+
+	.eyebrow {
+		margin: 0 0 2px;
+		font-size: 12px;
+		font-weight: 500;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #8e8e93;
+	}
+
+	h1 {
+		margin: 0;
+		font-size: 28px;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		color: #1c1c1e;
 	}
 
 	.header-right {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
-		gap: 0.75rem;
+		gap: 10px;
+	}
+
+	.stat-row {
+		display: flex;
+		align-items: center;
+		gap: 0;
+		background: #fff;
+		border-radius: 12px;
+		padding: 10px 16px;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+	}
+
+	.stat {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 0 14px;
+		gap: 2px;
+	}
+
+	.stat-label {
+		font-size: 10px;
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: #8e8e93;
+	}
+
+	.stat-value {
+		font-size: 18px;
+		font-weight: 600;
+		color: #1c1c1e;
+	}
+
+	.stat-value.danger { color: #ff3b30; }
+
+	.stat-divider {
+		width: 1px;
+		height: 28px;
+		background: #e5e5ea;
 	}
 
 	.theme-toggle {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 10px;
 	}
 
 	.toggle-label {
-		color: #888;
-		font-size: 0.9rem;
+		font-size: 13px;
+		color: #8e8e93;
 	}
 
-	.theme-btn {
-		padding: 6px 16px;
-		border-radius: 20px;
-		border: 2px solid transparent;
-		cursor: pointer;
-		font-size: 0.9rem;
-		transition: all 0.2s;
-		opacity: 0.5;
-	}
-
-	.theme-btn.techy {
-		background: #1a1a2e;
-		color: #38ef7d;
-		border-color: #38ef7d33;
-	}
-
-	.theme-btn.techy:hover, .theme-btn.techy.active {
-		border-color: #38ef7d;
-		opacity: 1;
-	}
-
-	.theme-btn.pink {
-		background: #fff0f5;
-		color: #d63384;
-		border-color: #ffb6c133;
-	}
-
-	.theme-btn.pink:hover, .theme-btn.pink.active {
-		border-color: #d63384;
-		opacity: 1;
-	}
-
-	h1 {
-		font-size: 1.8rem;
-		color: #667eea;
-		margin: 0;
-	}
-
-	.stats {
+	.segmented {
 		display: flex;
-		gap: 1.5rem;
-		color: #888;
+		background: #e5e5ea;
+		border-radius: 9px;
+		padding: 2px;
+		gap: 2px;
 	}
 
-	.stats strong {
-		color: #fff;
+	.segmented button {
+		padding: 5px 16px;
+		border: none;
+		border-radius: 7px;
+		background: transparent;
+		font-size: 13px;
+		font-weight: 500;
+		color: #3c3c43;
+		cursor: pointer;
+		transition: background 0.15s, color 0.15s;
 	}
 
-	.cheats strong {
-		color: #ff6b6b;
+	.segmented button.active {
+		background: #fff;
+		color: #1c1c1e;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 	}
 
-	.loading, .waiting {
-		text-align: center;
-		color: #888;
-	}
-
-	.hint {
-		color: #666;
-		font-size: 0.9rem;
-	}
-
-	.error {
-		text-align: center;
-		color: #ff6b6b;
-	}
-
-	.btn {
-		display: inline-block;
-		padding: 12px 24px;
-		background: #667eea;
-		color: white;
-		text-decoration: none;
-		border-radius: 8px;
-		margin-top: 1rem;
-	}
-
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid #333;
-		border-top: 3px solid #667eea;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-		margin: 20px auto;
-	}
-
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
-	.game-container {
-		display: grid;
-		grid-template-columns: 1fr 2fr;
-		gap: 2rem;
-	}
-
-	.panel {
-		background: #2a2a4e;
+	/* ── Cards ── */
+	.card {
+		background: #fff;
 		border-radius: 16px;
-		padding: 1.5rem;
+		padding: 20px;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.04);
 	}
 
-	.panel h2 {
-		margin: 0 0 1rem 0;
-		font-size: 1.2rem;
-		color: #888;
-	}
-
-	.user-monitor {
-		text-align: center;
-	}
-
-	.user-choice {
+	.center-card {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 2rem;
-		background: #1a1a2e;
-		border-radius: 12px;
-		border: 2px solid #38ef7d;
-	}
-
-	.waiting-text {
-		color: #666;
-	}
-
-	.emoji {
-		font-size: 3rem;
-		margin-bottom: 8px;
-	}
-
-	.label {
-		font-size: 1rem;
-		color: #ccc;
-		text-transform: capitalize;
-	}
-
-	.choices {
-		display: flex;
+		padding: 48px 24px;
 		gap: 12px;
-		margin-bottom: 1.5rem;
+		text-align: center;
+	}
+
+	.section-label {
+		margin: 0 0 12px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: #8e8e93;
+	}
+
+	/* ── Game grid ── */
+	.game-grid {
+		display: grid;
+		grid-template-columns: 1fr 2fr;
+		gap: 16px;
+	}
+
+	/* ── Choice display ── */
+	.choice-display {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 24px 16px;
+		gap: 6px;
+	}
+
+	.big-emoji { font-size: 48px; line-height: 1; }
+	.med-emoji { font-size: 28px; line-height: 1; }
+
+	.choice-name {
+		font-size: 15px;
+		font-weight: 500;
+		text-transform: capitalize;
+		color: #1c1c1e;
+	}
+
+	.choice-name.muted { color: #c7c7cc; }
+
+	/* ── Choice buttons ── */
+	.choice-row {
+		display: flex;
+		gap: 10px;
 	}
 
 	.choice-btn {
@@ -450,187 +457,202 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 15px;
-		background: #1a1a2e;
-		border: 2px solid #444;
+		gap: 6px;
+		padding: 14px 8px;
+		background: #f2f2f7;
+		border: 1.5px solid transparent;
 		border-radius: 12px;
 		cursor: pointer;
-		transition: all 0.2s;
+		transition: all 0.15s;
 	}
 
-	.choice-btn:hover {
-		border-color: #667eea;
-	}
+	.choice-btn:hover { background: #e9e9ef; }
 
 	.choice-btn.selected {
-		border-color: #667eea;
-		background: #3a3a6e;
+		background: #eff6ff;
+		border-color: #007aff;
 	}
 
-	.choice-btn .emoji {
-		font-size: 2rem;
+	.choice-btn-label {
+		font-size: 12px;
+		font-weight: 500;
+		text-transform: capitalize;
+		color: #3c3c43;
 	}
 
-	.cheat-modes {
+	/* ── Cheat modes ── */
+	.cheat-list {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
-		margin-bottom: 1.5rem;
+		border-radius: 12px;
+		overflow: hidden;
+		border: 1px solid #e5e5ea;
+		margin-bottom: 16px;
 	}
 
-	.cheat-option {
+	.cheat-row {
 		display: flex;
 		align-items: center;
 		gap: 12px;
-		padding: 12px;
-		background: #1a1a2e;
-		border: 2px solid #444;
-		border-radius: 8px;
+		padding: 12px 14px;
+		background: #fff;
 		cursor: pointer;
-		transition: all 0.2s;
+		transition: background 0.12s;
+		border-bottom: 1px solid #e5e5ea;
 	}
 
-	.cheat-option:hover {
-		border-color: #667eea;
-	}
+	.cheat-row:last-child { border-bottom: none; }
+	.cheat-row:hover { background: #f9f9fb; }
+	.cheat-row.selected { background: #f0f7ff; }
 
-	.cheat-option.selected {
-		border-color: #667eea;
-		background: #3a3a6e;
-	}
+	.cheat-row input { display: none; }
 
-	.cheat-option input {
-		display: none;
-	}
-
-	.cheat-content {
+	.cheat-text {
+		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
+		gap: 1px;
 	}
 
-	.cheat-content strong {
+	.cheat-title {
+		font-size: 14px;
+		font-weight: 500;
+		color: #1c1c1e;
+	}
+
+	.cheat-desc {
+		font-size: 12px;
+		color: #8e8e93;
+	}
+
+	.checkmark {
+		font-size: 14px;
+		color: #007aff;
+		font-weight: 600;
+	}
+
+	/* ── Buttons ── */
+	.btn-primary {
+		display: inline-block;
+		padding: 13px 24px;
+		background: #007aff;
 		color: #fff;
-	}
-
-	.cheat-content span {
-		color: #888;
-		font-size: 0.85rem;
-	}
-
-	.resolve-btn {
-		width: 100%;
-		padding: 16px;
-		font-size: 1.1rem;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
+		font-size: 15px;
+		font-weight: 600;
 		border: none;
 		border-radius: 12px;
 		cursor: pointer;
-		transition: opacity 0.2s;
+		text-decoration: none;
+		transition: opacity 0.15s;
 	}
 
-	.resolve-btn:disabled {
-		opacity: 0.5;
+	.btn-primary:disabled {
+		opacity: 0.35;
 		cursor: not-allowed;
 	}
 
-	.result-panel {
-		background: #2a2a4e;
-		border-radius: 16px;
-		padding: 2rem;
+	.btn-primary.resolve {
+		width: 100%;
 		text-align: center;
 	}
 
-	.result-panel h2 {
-		margin: 0 0 1.5rem 0;
-		color: #888;
-	}
-
-	.result-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 1rem;
-		margin-bottom: 2rem;
-	}
-
-	.result-item {
-		background: #1a1a2e;
-		padding: 1rem;
-		border-radius: 8px;
-	}
-
-	.result-item h3 {
-		margin: 0 0 0.5rem 0;
-		font-size: 0.9rem;
-		color: #666;
-	}
-
-	.outcome {
-		margin: 0;
-		font-size: 1.1rem;
-	}
-
-	.displayed {
-		color: #ff6b6b;
-	}
-
-	.cheat-badge {
-		margin: 0;
-		padding: 4px 8px;
-		border-radius: 4px;
-		display: inline-block;
-	}
-
-	.cheat-badge.cheated {
-		background: #ff6b6b33;
-		color: #ff6b6b;
+	/* ── Result card ── */
+	.result-card {
+		max-width: 540px;
+		margin: 0 auto;
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0;
 	}
 
 	.matchup {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		gap: 2rem;
-		margin-bottom: 2rem;
+		gap: 24px;
+		padding: 24px 0;
 	}
 
 	.player {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 1rem;
-		background: #1a1a2e;
-		border-radius: 12px;
+		gap: 4px;
 	}
 
-	.player p {
-		margin: 0 0 0.5rem 0;
-		color: #888;
+	.player-label {
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: #8e8e93;
 	}
 
 	.vs {
-		font-size: 1.5rem;
-		color: #666;
+		font-size: 13px;
+		font-weight: 600;
+		color: #c7c7cc;
 	}
 
-	.next-btn {
-		padding: 16px 48px;
-		font-size: 1.1rem;
-		background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-		color: white;
-		border: none;
+	.result-meta {
+		width: 100%;
 		border-radius: 12px;
-		cursor: pointer;
+		overflow: hidden;
+		border: 1px solid #e5e5ea;
+		margin-bottom: 20px;
 	}
 
-	@media (max-width: 768px) {
-		.game-container {
-			grid-template-columns: 1fr;
-		}
+	.meta-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 11px 14px;
+		background: #fff;
+		border-bottom: 1px solid #e5e5ea;
+	}
 
-		.result-grid {
-			grid-template-columns: 1fr;
-		}
+	.meta-item:last-child { border-bottom: none; }
+
+	.meta-label {
+		font-size: 14px;
+		color: #8e8e93;
+	}
+
+	.meta-value {
+		font-size: 14px;
+		font-weight: 500;
+		color: #1c1c1e;
+	}
+
+	.meta-value.danger { color: #ff3b30; }
+
+	/* ── Misc ── */
+	.body-text {
+		margin: 0;
+		font-size: 15px;
+		color: #1c1c1e;
+	}
+
+	.body-text.muted { color: #8e8e93; }
+	.body-text.danger { color: #ff3b30; }
+
+	.spinner {
+		width: 28px;
+		height: 28px;
+		border: 2.5px solid #e5e5ea;
+		border-top-color: #007aff;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	@media (max-width: 640px) {
+		.game-grid { grid-template-columns: 1fr; }
+		header { flex-direction: column; }
+		.header-right { align-items: flex-start; }
 	}
 </style>

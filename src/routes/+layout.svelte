@@ -25,7 +25,7 @@
 		box-sizing: border-box;
 	}
 
-	:global(body[data-theme='pink']) {
+	:global(body[data-theme='nica']) {
 		background: #fff0f5;
 		color: #4a0020;
 	}
