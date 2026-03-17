@@ -5,12 +5,33 @@
 	let userConnected = $state(false);
 	let loading = $state(true);
 
+	// Cursor-following card
+	let cardX = $state(0);
+	let cardY = $state(0);
+	let targetX = 0;
+	let targetY = 0;
+	let rafId: number;
+
+	function onMouseMove(e: MouseEvent) {
+		targetX = (e.clientX - window.innerWidth / 2) * 0.50;
+		targetY = (e.clientY - window.innerHeight / 2) * 0.3;
+	}
+
 	onMount(async () => {
+		function tick() {
+			cardX += (targetX - cardX) * 0.06;
+			cardY += (targetY - cardY) * 0.03;
+			rafId = requestAnimationFrame(tick);
+		}
+		rafId = requestAnimationFrame(tick);
+
 		const res = await fetch('/api/join');
 		const data = await res.json();
 		adminConnected = data.adminConnected;
 		userConnected = data.userConnected;
 		loading = false;
+
+		return () => cancelAnimationFrame(rafId);
 	});
 </script>
 
@@ -18,109 +39,209 @@
 	<title>Rock Paper Scissors</title>
 </svelte:head>
 
-<main>
-	<h1>Welcome to Rock Paper Scissors!</h1>
-	<p class="subtitle">Play against a robot and see who wins.</p>
+<div class="screen-wrap" onmousemove={onMouseMove} role="main">
+	<div class="pink-card" style="transform: translate({cardX}px, {cardY}px)">
+		<div class="pink-card-label">ROCK · PAPER · SCISSORS</div>
 
-	{#if loading}
-		<p class="loading">Loading...</p>
-	{:else}
-		<div class="buttons">
-			<a href="/admin" class="btn admin" class:disabled={adminConnected}>
-				{#if adminConnected}
-					Admin Connected
-				{:else}
-					Join as Admin
-				{/if}
-			</a>
+		{#if loading}
+			<div class="pink-waiting-small">Loading…</div>
+		{:else}
+			<div class="pink-list">
+				<a
+					href="/play"
+					class="pink-list-item"
+					class:pink-disabled={userConnected}
+				>
+					<span class="pink-num">[1]</span>
+					<span class="pink-arrow">→</span>
+					<span class="pink-word">{userConnected ? 'user connected' : 'play now'}</span>
+				</a>
+				<a
+					href="/admin"
+					class="pink-list-item"
+					class:pink-disabled={adminConnected}
+				>
+					<span class="pink-num">[2]</span>
+					<span class="pink-arrow">→</span>
+					<span class="pink-word">{adminConnected ? 'admin connected' : 'admin'}</span>
+				</a>
+			</div>
+		{/if}
+	</div>
 
-			<a href="/play" class="btn user" class:disabled={userConnected}>
-				{#if userConnected}
-					User Connected
-				{:else}
-					Play Now
-				{/if}
-			</a>
+	<div class="pink-marquee-track">
+		<div class="pink-marquee-content">
+			{#each Array(12) as _}
+				Rock Paper Scissors&nbsp;&bull;&nbsp;
+			{/each}
 		</div>
-
-		<div class="status">
-			<p>
-				Admin: <span class:connected={adminConnected}>{adminConnected ? 'Connected' : 'Waiting'}</span>
-			</p>
-			<p>
-				User: <span class:connected={userConnected}>{userConnected ? 'Connected' : 'Waiting'}</span>
-			</p>
-		</div>
-	{/if}
-</main>
+	</div>
+</div>
 
 <style>
-	main {
-		max-width: 600px;
-		margin: 0 auto;
-		text-align: center;
-		padding-top: 60px;
+	/* ── Custom fonts ── */
+	@font-face {
+		font-family: 'PPKyoto';
+		src: url('/fonts/PPKyoto-Thin.otf') format('opentype');
+		font-weight: 100;
+		font-style: normal;
 	}
 
-	h1 {
-		font-size: 2.5rem;
-		margin-bottom: 0.5rem;
+	@font-face {
+		font-family: 'PPKyoto';
+		src: url('/fonts/PPKyoto-MediumItalic.otf') format('opentype');
+		font-weight: 500;
+		font-style: italic;
 	}
 
-	.subtitle {
-		color: #888;
-		margin-bottom: 3rem;
+	@font-face {
+		font-family: 'FragmentMono';
+		src: url('/fonts/FragmentMono-Regular.ttf') format('truetype');
+		font-weight: 400;
+		font-style: normal;
 	}
 
-	.loading {
-		color: #888;
-	}
-
-	.buttons {
+	.screen-wrap {
+		--ink: #0b393c;
+		--bg-base:     #ff2c2c;
+		--bg-ellipse1: #f6aaff;
+		--bg-ellipse2: #f2cdf6;
+		position: fixed;
+		inset: 0;
+		background: var(--bg-base);
 		display: flex;
-		gap: 20px;
+		align-items: center;
 		justify-content: center;
-		margin-bottom: 3rem;
+		overflow: hidden;
 	}
 
-	.btn {
-		padding: 20px 40px;
-		font-size: 1.2rem;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
+	.screen-wrap::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		bottom: -25%;
+		transform: translateX(-50%);
+		width: 135vw;
+		height: 80vh;
+		border-radius: 50%;
+		background: var(--bg-ellipse1);
+		filter: blur(80px);
+		pointer-events: none;
+	}
+
+	.screen-wrap::after {
+		content: '';
+		position: absolute;
+		left: 50%;
+		bottom: -22%;
+		transform: translateX(-50%);
+		width: 135vw;
+		height: 65vh;
+		border-radius: 50%;
+		background: var(--bg-ellipse2);
+		filter: blur(55px);
+		pointer-events: none;
+	}
+
+	.pink-card {
+		position: relative;
+		z-index: 1;
+		will-change: transform;
+		background: rgba(255, 255, 255, 0.03);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		border-top: 0.5px solid rgba(255, 255, 255, 0.9);
+		border-left: 0.5px solid rgba(255, 255, 255, 0.9);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+		border-right: 1px solid rgba(255, 255, 255, 0.3);
+		border-radius: 28px;
+		box-shadow:
+			0 24px 48px rgba(80, 40, 120, 0.18),
+			0 4px 16px rgba(80, 40, 120, 0.10);
+		padding: 20px 28px 22px;
+		min-width: 240px;
+	}
+
+	.pink-card-label {
+		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
+		font-size: 13px;
+		color: rgba(80, 60, 100, 0.6);
+		margin-bottom: 14px;
+		text-transform: uppercase;
+	}
+
+	.pink-list {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.pink-list-item {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
 		text-decoration: none;
-		transition: transform 0.2s, opacity 0.2s;
+		padding: 2px 0;
 	}
 
-	.btn:hover:not(.disabled) {
-		transform: scale(1.05);
+	.pink-list-item.pink-disabled {
+		opacity: 0.4;
+		pointer-events: none;
 	}
 
-	.btn.admin {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
+	.pink-num {
+		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
+		font-size: 13px;
+		color: rgba(80, 60, 100, 0.45);
+		min-width: 22px;
 	}
 
-	.btn.user {
-		background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-		color: white;
+	.pink-arrow {
+		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
+		font-size: 13px;
+		color: rgba(50, 40, 80, 0.55);
+		min-width: 14px;
 	}
 
-	.btn.disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+	.pink-word {
+		font-family: 'Arial Narrow', 'Arial', sans-serif;
+		font-size: 24px;
+		font-weight: 400;
+		color: var(--ink);
+		letter-spacing: 0.02em;
 	}
 
-	.status {
-		color: #666;
+	.pink-waiting-small {
+		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
+		font-size: 13px;
+		color: rgba(80, 60, 100, 0.5);
+		margin-top: 12px;
 	}
 
-	.status p {
-		margin: 0.5rem 0;
+	/* Marquee */
+	.pink-marquee-track {
+		position: absolute;
+		z-index: 1;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		overflow: hidden;
+		padding: 14px 0;
+		white-space: nowrap;
 	}
 
-	.connected {
-		color: #38ef7d;
+	.pink-marquee-content {
+		display: inline-block;
+		animation: marquee 18s linear infinite;
+		font-family: 'PPKyoto', Georgia, serif;
+		font-weight: 100;
+		font-size: 48px;
+		color: var(--ink);
+		letter-spacing: -0.02em;
+	}
+
+	@keyframes marquee {
+		0%   { transform: translateX(0); }
+		100% { transform: translateX(-50%); }
 	}
 </style>

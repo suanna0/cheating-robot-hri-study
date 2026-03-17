@@ -112,6 +112,15 @@
 		<header>
 			<div class="header-left">
 				<p class="eyebrow">Control Panel</p>
+				{#if state}
+					<div class="theme-toggle">
+						<span class="toggle-label">Theme</span>
+						<div class="segmented">
+							<button class:active={state.theme === 'nico'} onclick={() => setTheme('nico')}>Nico</button>
+							<button class:active={state.theme === 'nica'} onclick={() => setTheme('nica')}>Nica</button>
+						</div>
+					</div>
+				{/if}
 			</div>
 			{#if state}
 				<div class="header-right">
@@ -123,13 +132,6 @@
 						<div class="stat"><span class="stat-label">Ties</span><span class="stat-value">{state.stats.ties}</span></div>
 						<div class="stat-divider"></div>
 						<div class="stat"><span class="stat-label">Cheats</span><span class="stat-value danger">{state.stats.cheatsUsed}</span></div>
-					</div>
-					<div class="theme-toggle">
-						<span class="toggle-label">Theme</span>
-						<div class="segmented">
-							<button class:active={state.theme === 'nico'} onclick={() => setTheme('nico')}>Nico</button>
-							<button class:active={state.theme === 'nica'} onclick={() => setTheme('nica')}>Nica</button>
-						</div>
 					</div>
 				</div>
 			{/if}
@@ -352,6 +354,12 @@
 		width: 1px;
 		height: 28px;
 		background: #e5e5ea;
+	}
+
+	.header-left {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 	}
 
 	.theme-toggle {
