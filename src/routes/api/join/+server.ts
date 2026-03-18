@@ -28,6 +28,7 @@ export async function GET() {
 	const state = getState();
 	return json({
 		adminConnected: state.adminConnected,
-		userConnected: state.userConnected
+		userConnected: state.userConnected,
+		theme: state.theme
 	});
 }

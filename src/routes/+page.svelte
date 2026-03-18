@@ -6,6 +6,7 @@
 	let userConnected = $state(false);
 	let loading = $state(true);
 	let resetting = $state(false);
+	let theme = $state<'nico' | 'nica'>('nica');
 
 	async function hardReset() {
 		resetting = true;
@@ -46,6 +47,7 @@
 		const data = await res.json();
 		adminConnected = data.adminConnected;
 		userConnected = data.userConnected;
+		if (data.theme) theme = data.theme;
 		loading = false;
 
 		return () => cancelAnimationFrame(rafId);
@@ -58,7 +60,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="screen-wrap" onmousemove={onMouseMove} role="main">
+<div class="screen-wrap" data-theme={theme} onmousemove={onMouseMove} role="main">
 	<div class="pink-card" style="transform: translate({cardX}px, {cardY}px)">
 		<div class="pink-card-label">ROCK · PAPER · SCISSORS</div>
 
@@ -123,6 +125,13 @@
 		src: url('/fonts/FragmentMono-Regular.ttf') format('truetype');
 		font-weight: 400;
 		font-style: normal;
+	}
+
+	.screen-wrap[data-theme='nico'] {
+		--ink: #0b393c;
+		--bg-base:     #7b2fff;
+		--bg-ellipse1: #d966ff;
+		--bg-ellipse2: #f0c8ff;
 	}
 
 	.screen-wrap {
