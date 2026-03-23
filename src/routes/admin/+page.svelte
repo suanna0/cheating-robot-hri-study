@@ -7,7 +7,6 @@
 	let error = $state<string | null>(null);
 	let eventSource: EventSource | null = null;
 
-	let selectedChoice = $state<Choice | null>(null);
 	let selectedCheatMode = $state<CheatMode>('fair');
 
 	const choices: Choice[] = ['rock', 'paper', 'scissors'];
@@ -61,12 +60,22 @@
 		});
 	});
 
+	const winsAgainst: Record<Choice, Choice> = { rock: 'paper', scissors: 'rock', paper: 'scissors' };
+
 	async function resolveRound() {
-		if (!selectedChoice) return;
+		if (!state) return;
+		let choice: Choice;
+		if (selectedCheatMode === 'reactive') {
+			const userChoice = state.userChoice;
+			if (!userChoice) return;
+			choice = winsAgainst[userChoice];
+		} else {
+			choice = choices[Math.floor(Math.random() * choices.length)];
+		}
 		await fetch('/api/resolve', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ cheatMode: selectedCheatMode, adminChoice: selectedChoice })
+			body: JSON.stringify({ cheatMode: selectedCheatMode, adminChoice: choice })
 		});
 	}
 
@@ -79,7 +88,6 @@
 	}
 
 	async function nextRound() {
-		selectedChoice = null;
 		selectedCheatMode = 'fair';
 		await fetch('/api/resolve', { method: 'DELETE' });
 	}
@@ -175,21 +183,7 @@
 
 				<!-- Admin controls -->
 				<div class="card">
-					<p class="section-label">Your Move</p>
-					<div class="choice-row">
-						{#each choices as choice}
-							<button
-								class="choice-btn"
-								class:selected={selectedChoice === choice}
-								onclick={() => selectedChoice = choice}
-							>
-								<span class="med-emoji">{choiceEmoji[choice]}</span>
-								<span class="choice-btn-label">{choice}</span>
-							</button>
-						{/each}
-					</div>
-
-					<p class="section-label" style="margin-top: 20px;">Cheat Mode</p>
+					<p class="section-label">Cheat Mode</p>
 					<div class="cheat-list">
 						{#each cheatModes as mode}
 							<label class="cheat-row" class:selected={selectedCheatMode === mode.value}>
@@ -207,13 +201,11 @@
 
 					<button
 						class="btn-primary resolve"
-						disabled={!selectedChoice || !state.userChoice}
+						disabled={!state.userChoice}
 						onclick={resolveRound}
 					>
 						{#if !state.userChoice}
 							Waiting for participant…
-						{:else if !selectedChoice}
-							Select your move
 						{:else}
 							Resolve Round
 						{/if}
@@ -299,14 +291,6 @@
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: #8e8e93;
-	}
-
-	h1 {
-		margin: 0;
-		font-size: 28px;
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		color: #1c1c1e;
 	}
 
 	.header-right {
@@ -442,7 +426,6 @@
 	}
 
 	.big-emoji { font-size: 48px; line-height: 1; }
-	.med-emoji { font-size: 28px; line-height: 1; }
 
 	.choice-name {
 		font-size: 15px;
@@ -452,40 +435,6 @@
 	}
 
 	.choice-name.muted { color: #c7c7cc; }
-
-	/* ── Choice buttons ── */
-	.choice-row {
-		display: flex;
-		gap: 10px;
-	}
-
-	.choice-btn {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 6px;
-		padding: 14px 8px;
-		background: #f2f2f7;
-		border: 1.5px solid transparent;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.choice-btn:hover { background: #e9e9ef; }
-
-	.choice-btn.selected {
-		background: #eff6ff;
-		border-color: #007aff;
-	}
-
-	.choice-btn-label {
-		font-size: 12px;
-		font-weight: 500;
-		text-transform: capitalize;
-		color: #3c3c43;
-	}
 
 	/* ── Cheat modes ── */
 	.cheat-list {
