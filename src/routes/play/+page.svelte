@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import type { Choice, UserViewState } from '$lib/types';
+	import P5Sprite from '$lib/components/P5Sprite.svelte';
 
 	let state = $state<UserViewState | null>(null);
 	let connected = $state(false);
@@ -184,6 +185,11 @@
 		{/if}
 	</div>
 
+	<!-- Sprite — bottom-right, theme-reactive -->
+	<div class="sprite-corner">
+		<P5Sprite theme={state?.theme ?? 'nica'} />
+	</div>
+
 	<!-- Marquee — always visible -->
 	<div class="pink-marquee-track">
 		<div class="pink-marquee-content">
@@ -275,7 +281,8 @@
 
 	.pink-card {
 		position: relative;
-		z-index: 1;
+		z-index: 2;
+		margin-top: 20vh;
 		will-change: transform;
 		background: rgba(255, 255, 255, 0.03);
 		backdrop-filter: blur(4px);
@@ -356,6 +363,15 @@
 		font-size: 13px;
 		color: rgba(80, 60, 100, 0.5);
 		margin-top: 12px;
+	}
+
+	/* Sprite corner */
+	.sprite-corner {
+		position: absolute;
+		z-index: 1;
+		top: 40%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 	}
 
 	/* Marquee */
