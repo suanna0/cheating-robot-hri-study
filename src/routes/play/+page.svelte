@@ -140,7 +140,7 @@
 			<div class="pink-waiting-small">Waiting for game to start…</div>
 		{:else if state.phase === 'playing'}
 			{#if !state.userChoice}
-				<div class="pink-card-label">CHOOSE&nbsp; YOUR&nbsp; NEXT&nbsp; MOVE</div>
+				<div class="pink-card-label">MAKE&nbsp; YOUR&nbsp; MOVE</div>
 				<div class="pink-list">
 					{#each choices as choice, i}
 						<button
@@ -187,7 +187,7 @@
 
 	<!-- Sprite — bottom-right, theme-reactive -->
 	<div class="sprite-corner">
-		<P5Sprite theme={state?.theme ?? 'nica'} />
+		<P5Sprite theme={state?.theme ?? 'nica'} adminConnected={state?.adminConnected ?? false} />
 	</div>
 
 	<!-- Marquee — always visible -->

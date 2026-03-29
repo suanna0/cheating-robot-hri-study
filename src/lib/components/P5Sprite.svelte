@@ -2,27 +2,30 @@
 	import { onMount, onDestroy } from 'svelte';
 	import type { Theme } from '$lib/types';
 
-	let { theme }: { theme: Theme } = $props();
+	let { theme, adminConnected }: { theme: Theme; adminConnected: boolean } = $props();
 
 	let container: HTMLDivElement;
 	let p5Instance: import('p5').default | null = null;
 
-	// Mouse-follow state
+	// Two-stage lerp for rubbery delay
 	let x = $state(0);
 	let y = $state(0);
-	let targetX = 0;
-	let targetY = 0;
+	let lagX = 0, lagY = 0;   // intermediate ghost position
+	let targetX = 0, targetY = 0;
 	let rafId: number;
 
 	function onMouseMove(e: MouseEvent) {
-		// Offset relative to screen center, scaled down for subtlety
-		targetX = (e.clientX - window.innerWidth / 2) * 0.06;
+		targetX = (e.clientX - window.innerWidth  / 2) * 0.06;
 		targetY = (e.clientY - window.innerHeight / 2) * 0.04;
 	}
 
 	function tick() {
-		x += (targetX - x) * 0.05;
-		y += (targetY - y) * 0.05;
+		// stage 1 — ghost chases cursor slowly
+		lagX += (targetX - lagX) * 0.03;
+		lagY += (targetY - lagY) * 0.03;
+		// stage 2 — sprite chases ghost even more slowly
+		x += (lagX - x) * 0.04;
+		y += (lagY - y) * 0.04;
 		rafId = requestAnimationFrame(tick);
 	}
 
@@ -58,6 +61,7 @@
 <div
 	bind:this={container}
 	class="sprite-wrap"
+	class:visible={adminConnected}
 	style="transform: translate({x}px, {y}px)"
 ></div>
 
@@ -67,6 +71,11 @@
 		height: 50vh;
 		pointer-events: none;
 		will-change: transform;
+		opacity: 0;
+		transition: opacity 1.2s ease;
+	}
+	.sprite-wrap.visible {
+		opacity: 1;
 	}
 	.sprite-wrap :global(canvas) {
 		display: block;

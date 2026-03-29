@@ -161,6 +161,13 @@
 				<div class="spinner"></div>
 				<p class="body-text">Waiting for participant to join</p>
 				<p class="body-text muted">Share the /play URL</p>
+				<div class="theme-picker">
+					<p class="picker-label">Set theme</p>
+					<div class="segmented">
+						<button class:active={state.theme === 'nico'} onclick={() => setTheme('nico')}>Nico</button>
+						<button class:active={state.theme === 'nica'} onclick={() => setTheme('nica')}>Nica</button>
+					</div>
+				</div>
 			</div>
 		{:else if state.phase === 'playing'}
 			<div class="game-grid">
@@ -582,6 +589,24 @@
 	}
 
 	.meta-value.danger { color: #ff3b30; }
+
+	/* ── Theme picker (waiting card) ── */
+	.theme-picker {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	.picker-label {
+		margin: 0;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: #8e8e93;
+	}
 
 	/* ── Misc ── */
 	.body-text {
