@@ -2,12 +2,18 @@
 	import { onMount, onDestroy } from 'svelte';
 	import type { Choice, UserViewState } from '$lib/types';
 	import P5Sprite from '$lib/components/P5Sprite.svelte';
+	import RpsIcon from '$lib/components/RpsIcon.svelte';
+	import RobotSpeechBubble from '$lib/components/RobotSpeechBubble.svelte';
+	import { countdownDisplay } from '$lib/countdown';
 
 	let state = $state<UserViewState | null>(null);
-	let connected = $state(false);
 	let error = $state<string | null>(null);
 	let eventSource: EventSource | null = null;
 	let hoveredChoice = $state<number | null>(0);
+
+	let nowMs = $state(Date.now());
+	let reactiveShowTrueHand = $state(false);
+	let speechVisible = $state(false);
 
 	// Cursor-following card
 	let cardX = $state(0);
@@ -19,19 +25,47 @@
 	let cardEl: HTMLDivElement | null = null;
 
 	function onMouseMove(e: MouseEvent) {
-		targetX = (e.clientX - window.innerWidth / 2) * 0.50;
+		targetX = (e.clientX - window.innerWidth / 2) * 0.5;
 		targetY = (e.clientY - window.innerHeight / 2) * 0.3;
 	}
 
 	const choices: Choice[] = ['rock', 'paper', 'scissors'];
-	const choiceEmoji: Record<Choice, string> = {
-		rock: '🪨',
-		paper: '📄',
-		scissors: '✂️'
-	};
+
+	$effect(() => {
+		if (state?.phase !== 'countdown' || state.countdownStartedAt == null) {
+			return;
+		}
+		let id: number;
+		function frame() {
+			nowMs = Date.now();
+			id = requestAnimationFrame(frame);
+		}
+		id = requestAnimationFrame(frame);
+		return () => cancelAnimationFrame(id);
+	});
+
+	$effect(() => {
+		const s = state;
+		if (!s || s.phase !== 'resolved' || !s.lastResult) {
+			reactiveShowTrueHand = false;
+			speechVisible = false;
+			return;
+		}
+		const lr = s.lastResult;
+		if (lr.decoyAdminChoice != null) {
+			reactiveShowTrueHand = false;
+			speechVisible = false;
+			const h = setTimeout(() => {
+				reactiveShowTrueHand = true;
+				speechVisible = true;
+			}, 300);
+			return () => clearTimeout(h);
+		}
+		reactiveShowTrueHand = true;
+		speechVisible = true;
+	});
 
 	onMount(async () => {
-		// Start cursor-follow animation loop
 		function tick() {
 			cardX += (targetX - cardX) * 0.06;
 			cardY += (targetY - cardY) * 0.03;
@@ -39,7 +73,6 @@
 		}
 		rafId = requestAnimationFrame(tick);
 
-		// Join as user
 		const joinRes = await fetch('/api/join', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -52,9 +85,6 @@
 			return;
 		}
 
-		connected = true;
-
-		// Connect to SSE
 		eventSource = new EventSource('/api/events?role=user');
 
 		eventSource.onmessage = (event) => {
@@ -75,7 +105,6 @@
 		if (eventSource) {
 			eventSource.close();
 		}
-		// Leave game
 		fetch('/api/join', {
 			method: 'DELETE',
 			headers: { 'Content-Type': 'application/json' },
@@ -89,17 +118,6 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ role: 'user', choice })
 		});
-	}
-
-	function getResultMessage(outcome: 'admin' | 'user' | 'tie'): string {
-		switch (outcome) {
-			case 'user':
-				return 'You Win!';
-			case 'admin':
-				return 'You Lose!';
-			case 'tie':
-				return "It's a Tie!";
-		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -123,7 +141,16 @@
 	onmousemove={onMouseMove}
 	role="main"
 >
-	<!-- Glass card — always visible, left-justified, mouse-following -->
+	{#if state?.phase === 'countdown' && state.countdownStartedAt != null}
+		{@const elapsed = nowMs - state.countdownStartedAt}
+		{@const cdLabel = countdownDisplay(elapsed)}
+		<div class="countdown-overlay" aria-live="polite">
+			{#if cdLabel}
+				<div class="countdown-text">{cdLabel}</div>
+			{/if}
+		</div>
+	{/if}
+
 	<div class="pink-card" bind:this={cardEl} style="transform: translate({cardX}px, {cardY}px)">
 		{#if error}
 			<div class="pink-card-label">ERROR</div>
@@ -144,6 +171,7 @@
 				<div class="pink-list">
 					{#each choices as choice, i}
 						<button
+							type="button"
 							class="pink-list-item"
 							class:pink-active={hoveredChoice === i}
 							onmouseenter={() => (hoveredChoice = i)}
@@ -152,7 +180,7 @@
 						>
 							<span class="pink-num">[{i + 1}]</span>
 							<span class="pink-arrow" style="opacity: {hoveredChoice === i ? 1 : 0}">→</span>
-							<span class="pink-word">{choice}</span>
+							<RpsIcon {choice} size="md" />
 						</button>
 					{/each}
 				</div>
@@ -162,35 +190,63 @@
 					<div class="pink-list-item pink-active">
 						<span class="pink-num">[{choices.indexOf(state.userChoice) + 1}]</span>
 						<span class="pink-arrow">→</span>
-						<span class="pink-word">{state.userChoice}</span>
+						<RpsIcon choice={state.userChoice} size="md" />
 					</div>
 				</div>
-				<div class="pink-waiting-small">waiting for opponent…</div>
+				<div class="pink-waiting-small">Locked in — get ready…</div>
 			{/if}
+		{:else if state.phase === 'countdown' && state.userChoice}
+			<div class="pink-card-label">LOCKED&nbsp; IN</div>
+			<div class="pink-list">
+				<div class="pink-list-item pink-active">
+					<span class="pink-num">YOU</span>
+					<span class="pink-arrow">→</span>
+					<RpsIcon choice={state.userChoice} size="md" />
+				</div>
+			</div>
+			<div class="pink-waiting-small">Countdown on screen…</div>
 		{:else if state.phase === 'resolved' && state.lastResult}
+			{@const lr = state.lastResult}
 			<div class="pink-card-label">RESULT</div>
 			<div class="pink-list">
 				<div class="pink-list-item pink-active">
 					<span class="pink-num">YOU</span>
 					<span class="pink-arrow">→</span>
-					<span class="pink-word">{state.lastResult.userChoice}</span>
+					<RpsIcon choice={lr.userChoice} size="md" />
 				</div>
-				<div class="pink-list-item">
+				<div class="pink-list-item bot-row">
 					<span class="pink-num">BOT</span>
 					<span class="pink-arrow">→</span>
-					<span class="pink-word">{state.lastResult.adminChoice}</span>
+					<span class="bot-hand-slot">
+						{#if lr.decoyAdminChoice != null}
+							<span class="hand-layer" class:layer-visible={!reactiveShowTrueHand}>
+								<RpsIcon choice={lr.decoyAdminChoice} size="md" />
+							</span>
+							<span class="hand-layer" class:layer-visible={reactiveShowTrueHand}>
+								<RpsIcon choice={lr.adminChoice} size="md" />
+							</span>
+						{:else}
+							<RpsIcon choice={lr.adminChoice} size="md" />
+						{/if}
+					</span>
 				</div>
 			</div>
-			<div class="pink-waiting-small">{getResultMessage(state.lastResult.outcome)} · waiting for next round…</div>
+			<div class="pink-waiting-small">waiting for next round…</div>
 		{/if}
 	</div>
 
-	<!-- Sprite — bottom-right, theme-reactive -->
 	<div class="sprite-corner">
-		<P5Sprite theme={state?.theme ?? 'nica'} adminConnected={state?.adminConnected ?? false} />
+		<div class="sprite-bubble-host">
+			{#if state?.lastResult && state.phase === 'resolved'}
+				<RobotSpeechBubble
+					outcome={state.lastResult.outcome}
+					visible={speechVisible}
+				/>
+			{/if}
+			<P5Sprite theme={state?.theme ?? 'nica'} adminConnected={state?.adminConnected ?? false} />
+		</div>
 	</div>
 
-	<!-- Marquee — always visible -->
 	<div class="pink-marquee-track">
 		<div class="pink-marquee-content">
 			{#each Array(12) as _}
@@ -201,8 +257,6 @@
 </div>
 
 <style>
-
-	/* ── Custom fonts ── */
 	@font-face {
 		font-family: 'PPKyoto';
 		src: url('/fonts/PPKyoto-Thin.otf') format('opentype');
@@ -224,11 +278,9 @@
 		font-style: normal;
 	}
 
-	/* ── Pink full-screen playing UI ── */
 	.screen-wrap {
 		--ink: #0b393c;
-		/* Pink theme colors */
-		--bg-base:     #ff2c2c;
+		--bg-base: #ff2c2c;
 		--bg-ellipse1: #f6aaff;
 		--bg-ellipse2: #f2cdf6;
 		position: fixed;
@@ -241,10 +293,9 @@
 		overflow: hidden;
 	}
 
-	/* Techy theme overrides */
 	.screen-wrap[data-theme='nico'] {
 		--ink: #0b393c;
-		--bg-base:     #7b2fff;
+		--bg-base: #7b2fff;
 		--bg-ellipse1: #d966ff;
 		--bg-ellipse2: #f0c8ff;
 	}
@@ -279,6 +330,37 @@
 		transition: background-color 0.3s ease;
 	}
 
+	.countdown-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+		background: rgba(0, 0, 0, 0.12);
+	}
+
+	.countdown-text {
+		font-family: 'PPKyoto', Georgia, serif;
+		font-weight: 100;
+		font-size: min(22vw, 140px);
+		color: var(--ink);
+		text-shadow: 0 4px 32px rgba(255, 255, 255, 0.35);
+		animation: cdPulse 0.45s ease-out;
+	}
+
+	@keyframes cdPulse {
+		from {
+			opacity: 0;
+			transform: scale(0.85);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
 	.pink-card {
 		position: relative;
 		z-index: 2;
@@ -287,16 +369,14 @@
 		background: rgba(255, 255, 255, 0.03);
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
-		/* Light at -45° (top-left), 80% brightness → bright top & left edges */
 		border-top: 0.5px solid rgba(255, 255, 255, 0.9);
 		border-left: 0.5px solid rgba(255, 255, 255, 0.9);
 		border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 		border-right: 1px solid rgba(255, 255, 255, 0.3);
 		border-radius: 28px;
-		/* Depth: 72 */
 		box-shadow:
 			0 24px 48px rgba(80, 40, 120, 0.18),
-			0 4px 16px rgba(80, 40, 120, 0.10);
+			0 4px 16px rgba(80, 40, 120, 0.1);
 		padding: 20px 28px 22px;
 		min-width: 240px;
 	}
@@ -312,17 +392,17 @@
 	.pink-list {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 8px;
 	}
 
 	.pink-list-item {
 		display: flex;
-		align-items: baseline;
-		gap: 6px;
+		align-items: center;
+		gap: 8px;
 		background: none;
 		border: none;
 		cursor: pointer;
-		padding: 2px 0;
+		padding: 4px 0;
 		text-align: left;
 	}
 
@@ -330,7 +410,7 @@
 		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
 		font-size: 13px;
 		color: rgba(80, 60, 100, 0.45);
-		min-width: 22px;
+		min-width: 28px;
 	}
 
 	.pink-arrow {
@@ -339,15 +419,6 @@
 		color: rgba(50, 40, 80, 0.55);
 		min-width: 14px;
 	}
-
-	.pink-word {
-		font-family: 'Arial Narrow', 'Arial', sans-serif;
-		font-size: 24px;
-		font-weight: 400;
-		color: var(--ink);
-		letter-spacing: 0.02em;
-	}
-
 
 	.btn {
 		font-family: 'FragmentMono', 'Courier New', Courier, monospace;
@@ -365,16 +436,46 @@
 		margin-top: 12px;
 	}
 
-	/* Sprite corner */
+	.bot-row {
+		align-items: center;
+	}
+
+	.bot-hand-slot {
+		position: relative;
+		width: 56px;
+		height: 48px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: flex-start;
+	}
+
+	.hand-layer {
+		position: absolute;
+		left: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		opacity: 0;
+		transition: opacity 0.35s ease-in-out;
+		pointer-events: none;
+	}
+
+	.hand-layer.layer-visible {
+		opacity: 1;
+	}
+
 	.sprite-corner {
 		position: absolute;
-		z-index: 1;
+		z-index: 4;
 		top: 40%;
 		left: 50%;
 		transform: translate(-50%, -50%);
 	}
 
-	/* Marquee */
+	.sprite-bubble-host {
+		position: relative;
+		display: inline-block;
+	}
+
 	.pink-marquee-track {
 		position: absolute;
 		z-index: 1;
@@ -397,7 +498,11 @@
 	}
 
 	@keyframes marquee {
-		0%   { transform: translateX(0); }
-		100% { transform: translateX(-50%); }
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-50%);
+		}
 	}
 </style>

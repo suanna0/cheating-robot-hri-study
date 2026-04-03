@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# SvelteKit / Vite build output
+.svelte-kit/
+build/
+dist/
+
+# Environment and secrets (never commit real keys)
+.env
+.env.*
+!.env.example
+
+# Logs and debug
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor (personal IDE data)
+.idea/
+
+# Vercel / deployment (if you use the CLI)
+.vercel
+
+# Test / coverage (if you add tests later)
+coverage/
+
+# TypeScript incremental cache
+*.tsbuildinfo
+
+# Vite (occasional timestamped config caches)
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
