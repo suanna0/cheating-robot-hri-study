@@ -141,6 +141,14 @@
 	onmousemove={onMouseMove}
 	role="main"
 >
+	<div class="sprite-bg-layer" aria-hidden="true">
+		{#if state?.adminConnected}
+			<div class="sprite-bg-scale">
+				<P5Sprite theme={state.theme} adminConnected={true} />
+			</div>
+		{/if}
+	</div>
+
 	{#if state?.phase === 'countdown' && state.countdownStartedAt != null}
 		{@const elapsed = nowMs - state.countdownStartedAt}
 		{@const cdLabel = countdownDisplay(elapsed)}
@@ -151,7 +159,8 @@
 		</div>
 	{/if}
 
-	<div class="pink-card" bind:this={cardEl} style="transform: translate({cardX}px, {cardY}px)">
+	<div class="pink-card-stack" bind:this={cardEl} style="transform: translate({cardX}px, {cardY}px)">
+		<div class="pink-card">
 		{#if error}
 			<div class="pink-card-label">ERROR</div>
 			<div class="pink-waiting-small">{error}</div>
@@ -233,18 +242,16 @@
 			</div>
 			<div class="pink-waiting-small">waiting for next round…</div>
 		{/if}
-	</div>
+		</div>
 
-	<div class="sprite-corner">
-		<div class="sprite-bubble-host">
-			{#if state?.lastResult && state.phase === 'resolved'}
+		{#if state?.lastResult && state.phase === 'resolved'}
+			<div class="speech-bubble-slot">
 				<RobotSpeechBubble
 					outcome={state.lastResult.outcome}
 					visible={speechVisible}
 				/>
-			{/if}
-			<P5Sprite theme={state?.theme ?? 'nica'} adminConnected={state?.adminConnected ?? false} />
-		</div>
+			</div>
+		{/if}
 	</div>
 
 	<div class="pink-marquee-track">
@@ -291,6 +298,7 @@
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
+		isolation: isolate;
 	}
 
 	.screen-wrap[data-theme='nico'] {
@@ -303,6 +311,7 @@
 	.screen-wrap::before {
 		content: '';
 		position: absolute;
+		z-index: 1;
 		left: 50%;
 		bottom: -25%;
 		transform: translateX(-50%);
@@ -318,6 +327,7 @@
 	.screen-wrap::after {
 		content: '';
 		position: absolute;
+		z-index: 1;
 		left: 50%;
 		bottom: -22%;
 		transform: translateX(-50%);
@@ -328,6 +338,28 @@
 		filter: blur(55px);
 		pointer-events: none;
 		transition: background-color 0.3s ease;
+	}
+
+	.sprite-bg-layer {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+		opacity: 0.4;
+		transition: opacity 1s ease;
+	}
+
+	.sprite-bg-scale {
+		transform: scale(1.35) translateY(6%);
+		transform-origin: center center;
+	}
+
+	.sprite-bg-scale :global(.sprite-wrap) {
+		width: min(72vh, 92vw);
+		height: min(72vh, 92vw);
 	}
 
 	.countdown-overlay {
@@ -361,11 +393,19 @@
 		}
 	}
 
-	.pink-card {
+	.pink-card-stack {
 		position: relative;
 		z-index: 2;
 		margin-top: 20vh;
 		will-change: transform;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0;
+	}
+
+	.pink-card {
+		position: relative;
 		background: rgba(255, 255, 255, 0.03);
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
@@ -463,22 +503,19 @@
 		opacity: 1;
 	}
 
-	.sprite-corner {
-		position: absolute;
-		z-index: 4;
-		top: 40%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-	}
-
-	.sprite-bubble-host {
+	.speech-bubble-slot {
 		position: relative;
-		display: inline-block;
+		margin-top: 14px;
+		display: flex;
+		justify-content: center;
+		width: 100%;
+		min-height: 1px;
+		z-index: 1;
 	}
 
 	.pink-marquee-track {
 		position: absolute;
-		z-index: 1;
+		z-index: 3;
 		bottom: 5px;
 		left: 0;
 		right: 0;
