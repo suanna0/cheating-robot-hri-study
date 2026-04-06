@@ -5,8 +5,8 @@ import type { Choice, Role } from '$lib/types';
 export async function POST({ request }) {
 	const { role, choice } = (await request.json()) as { role: Role; choice: Choice };
 
-	if (!role || (role !== 'admin' && role !== 'user')) {
-		return json({ success: false, error: 'Invalid role' }, { status: 400 });
+	if (role !== 'user') {
+		return json({ success: false, error: 'Only user role is supported' }, { status: 400 });
 	}
 
 	const validChoices: Choice[] = ['rock', 'paper', 'scissors'];
@@ -14,6 +14,6 @@ export async function POST({ request }) {
 		return json({ success: false, error: 'Invalid choice' }, { status: 400 });
 	}
 
-	const result = submitChoice(role, choice);
+	const result = submitChoice('user', choice);
 	return json(result, { status: result.success ? 200 : 400 });
 }

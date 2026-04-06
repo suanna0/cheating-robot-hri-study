@@ -1,4 +1,14 @@
-import type { Choice, CheatMode, GameState, Outcome, AdminViewState, UserViewState, Role, Theme } from '$lib/types';
+import { COUNTDOWN_TOTAL_MS } from '$lib/countdown';
+import type {
+	Choice,
+	CheatMode,
+	GameState,
+	Outcome,
+	AdminViewState,
+	UserViewState,
+	Role,
+	Theme
+} from '$lib/types';
 
 // Singleton game state
 let gameState: GameState = {
@@ -9,6 +19,10 @@ let gameState: GameState = {
 	phase: 'waiting',
 	lastResult: null,
 	theme: 'nica',
+	adminReady: false,
+	pendingCheatMode: null,
+	countdownStartedAt: null,
+	countdownEndsAt: null,
 	stats: {
 		adminWins: 0,
 		userWins: 0,
@@ -17,9 +31,29 @@ let gameState: GameState = {
 	}
 };
 
+let countdownTimeout: ReturnType<typeof setTimeout> | null = null;
+
 // Event listeners for SSE
 type Listener = (state: GameState) => void;
 const listeners: Map<string, { callback: Listener; role: Role }> = new Map();
+
+function clearCountdownTimer(): void {
+	if (countdownTimeout) {
+		clearTimeout(countdownTimeout);
+		countdownTimeout = null;
+	}
+}
+
+function scheduleCountdownFinalize(): void {
+	clearCountdownTimer();
+	const endsAt = gameState.countdownEndsAt;
+	if (endsAt == null) return;
+	const ms = Math.max(0, endsAt - Date.now());
+	countdownTimeout = setTimeout(() => {
+		countdownTimeout = null;
+		finalizeAfterCountdown();
+	}, ms);
+}
 
 function notifyListeners() {
 	listeners.forEach(({ callback }) => {
@@ -29,7 +63,6 @@ function notifyListeners() {
 
 export function subscribe(id: string, role: Role, callback: Listener): () => void {
 	listeners.set(id, { callback, role });
-	// Send initial state
 	callback(gameState);
 
 	return () => {
@@ -57,11 +90,16 @@ export function getUserView(): UserViewState {
 		userChoice: gameState.userChoice,
 		phase: gameState.phase,
 		theme: gameState.theme,
+		countdownStartedAt: gameState.countdownStartedAt,
+		countdownEndsAt: gameState.countdownEndsAt,
 		lastResult: gameState.lastResult
 			? {
 					outcome: gameState.lastResult.displayedOutcome,
 					adminChoice: gameState.lastResult.adminChoice,
-					userChoice: gameState.lastResult.userChoice
+					userChoice: gameState.lastResult.userChoice,
+					...(gameState.lastResult.decoyAdminChoice != null
+						? { decoyAdminChoice: gameState.lastResult.decoyAdminChoice }
+						: {})
 				}
 			: null
 	};
@@ -80,43 +118,55 @@ export function joinGame(role: Role): { success: boolean; error?: string } {
 		gameState.userConnected = true;
 	}
 
-	// Move to playing phase if both connected
 	if (gameState.adminConnected && gameState.userConnected) {
-		gameState.phase = 'playing';
+		if (gameState.phase === 'waiting') {
+			gameState.phase = 'playing';
+		}
 	}
 
 	notifyListeners();
 	return { success: true };
 }
 
+function clearRoundProgress(): void {
+	clearCountdownTimer();
+	gameState.userChoice = null;
+	gameState.adminChoice = null;
+	gameState.adminReady = false;
+	gameState.pendingCheatMode = null;
+	gameState.countdownStartedAt = null;
+	gameState.countdownEndsAt = null;
+	gameState.lastResult = null;
+}
+
 export function leaveGame(role: Role): void {
+	clearCountdownTimer();
 	if (role === 'admin') {
 		gameState.adminConnected = false;
 	} else {
 		gameState.userConnected = false;
 	}
 
-	// Reset to waiting if either disconnects
 	if (!gameState.adminConnected || !gameState.userConnected) {
 		gameState.phase = 'waiting';
-		gameState.userChoice = null;
-		gameState.adminChoice = null;
+		clearRoundProgress();
 	}
 
 	notifyListeners();
 }
 
 export function submitChoice(role: Role, choice: Choice): { success: boolean; error?: string } {
+	if (role !== 'user') {
+		return { success: false, error: 'Only the user submits via this endpoint' };
+	}
 	if (gameState.phase !== 'playing') {
 		return { success: false, error: 'Game not in playing phase' };
 	}
-
-	if (role === 'admin') {
-		gameState.adminChoice = choice;
-	} else {
-		gameState.userChoice = choice;
+	if (gameState.userChoice != null) {
+		return { success: false, error: 'Choice already locked' };
 	}
 
+	gameState.userChoice = choice;
 	notifyListeners();
 	return { success: true };
 }
@@ -142,35 +192,105 @@ function getWinningChoice(against: Choice): Choice {
 	return winMap[against];
 }
 
-export function resolveRound(
+/** Bot plays this → user wins (for reactive decoy). */
+function getLosingChoiceForBot(userChoice: Choice): Choice {
+	const map: Record<Choice, Choice> = {
+		rock: 'scissors',
+		paper: 'rock',
+		scissors: 'paper'
+	};
+	return map[userChoice];
+}
+
+function beginCountdown(): void {
+	const now = Date.now();
+	gameState.phase = 'countdown';
+	gameState.countdownStartedAt = now;
+	gameState.countdownEndsAt = now + COUNTDOWN_TOTAL_MS;
+	scheduleCountdownFinalize();
+}
+
+export function setAdminReady(
 	cheatMode: CheatMode,
-	adminChoice: Choice
+	adminChoice: Choice | undefined
 ): { success: boolean; error?: string } {
 	if (gameState.phase !== 'playing') {
 		return { success: false, error: 'Game not in playing phase' };
 	}
-
 	if (!gameState.userChoice) {
-		return { success: false, error: 'User has not made a choice yet' };
+		return { success: false, error: 'Participant has not chosen yet' };
+	}
+	if (gameState.adminReady) {
+		return { success: false, error: 'Already locked in for this round' };
 	}
 
-	let finalAdminChoice = adminChoice;
+	if (cheatMode === 'reactive') {
+		if (adminChoice != null) {
+			return { success: false, error: 'Reactive mode does not take a hand choice' };
+		}
+		gameState.adminChoice = null;
+	} else {
+		if (!adminChoice) {
+			return { success: false, error: 'Hand choice required for this mode' };
+		}
+		gameState.adminChoice = adminChoice;
+	}
+
+	gameState.pendingCheatMode = cheatMode;
+	gameState.adminReady = true;
+
+	beginCountdown();
+	notifyListeners();
+	return { success: true };
+}
+
+function finalizeAfterCountdown(): void {
+	if (gameState.phase !== 'countdown') {
+		return;
+	}
+	const cheatMode = gameState.pendingCheatMode;
+	const userChoice = gameState.userChoice;
+	if (!cheatMode || !userChoice) {
+		gameState.phase = 'playing';
+		gameState.adminReady = false;
+		gameState.pendingCheatMode = null;
+		gameState.countdownStartedAt = null;
+		gameState.countdownEndsAt = null;
+		notifyListeners();
+		return;
+	}
+
+	let finalAdminChoice: Choice;
+	let decoyAdminChoice: Choice | undefined;
+	let trueOutcome: Outcome;
 	let displayedOutcome: Outcome;
 
-	// Calculate true outcome
-	const trueOutcome = calculateOutcome(gameState.userChoice, adminChoice);
-
-	if (cheatMode === 'fair') {
-		displayedOutcome = trueOutcome;
-	} else if (cheatMode === 'false-win') {
-		// Admin claims victory regardless of actual outcome
+	if (cheatMode === 'reactive') {
+		finalAdminChoice = getWinningChoice(userChoice);
+		decoyAdminChoice = getLosingChoiceForBot(userChoice);
+		trueOutcome = calculateOutcome(userChoice, finalAdminChoice);
 		displayedOutcome = 'admin';
 		gameState.stats.cheatsUsed++;
 	} else {
-		// Reactive cheat: pick winning choice against user
-		finalAdminChoice = getWinningChoice(gameState.userChoice);
-		displayedOutcome = 'admin';
-		gameState.stats.cheatsUsed++;
+		const committed = gameState.adminChoice;
+		if (!committed) {
+			gameState.phase = 'playing';
+			gameState.adminReady = false;
+			gameState.pendingCheatMode = null;
+			gameState.countdownStartedAt = null;
+			gameState.countdownEndsAt = null;
+			notifyListeners();
+			return;
+		}
+		finalAdminChoice = committed;
+		trueOutcome = calculateOutcome(userChoice, finalAdminChoice);
+
+		if (cheatMode === 'fair') {
+			displayedOutcome = trueOutcome;
+		} else {
+			displayedOutcome = 'admin';
+			gameState.stats.cheatsUsed++;
+		}
 	}
 
 	gameState.adminChoice = finalAdminChoice;
@@ -179,11 +299,15 @@ export function resolveRound(
 		displayedOutcome,
 		cheatMode,
 		adminChoice: finalAdminChoice,
-		userChoice: gameState.userChoice
+		userChoice,
+		...(decoyAdminChoice != null ? { decoyAdminChoice } : {})
 	};
 	gameState.phase = 'resolved';
+	gameState.pendingCheatMode = null;
+	gameState.adminReady = false;
+	gameState.countdownStartedAt = null;
+	gameState.countdownEndsAt = null;
 
-	// Update stats based on TRUE outcome
 	if (trueOutcome === 'admin') {
 		gameState.stats.adminWins++;
 	} else if (trueOutcome === 'user') {
@@ -193,7 +317,6 @@ export function resolveRound(
 	}
 
 	notifyListeners();
-	return { success: true };
 }
 
 export function resetRound(): { success: boolean; error?: string } {
@@ -201,9 +324,14 @@ export function resetRound(): { success: boolean; error?: string } {
 		return { success: false, error: 'Cannot reset, round not resolved' };
 	}
 
+	clearCountdownTimer();
 	gameState.userChoice = null;
 	gameState.adminChoice = null;
 	gameState.lastResult = null;
+	gameState.adminReady = false;
+	gameState.pendingCheatMode = null;
+	gameState.countdownStartedAt = null;
+	gameState.countdownEndsAt = null;
 	gameState.phase = 'playing';
 
 	notifyListeners();
@@ -211,6 +339,7 @@ export function resetRound(): { success: boolean; error?: string } {
 }
 
 export function resetGame(): void {
+	clearCountdownTimer();
 	gameState = {
 		adminConnected: false,
 		userConnected: false,
@@ -219,6 +348,10 @@ export function resetGame(): void {
 		phase: 'waiting',
 		lastResult: null,
 		theme: gameState.theme,
+		adminReady: false,
+		pendingCheatMode: null,
+		countdownStartedAt: null,
+		countdownEndsAt: null,
 		stats: {
 			adminWins: 0,
 			userWins: 0,

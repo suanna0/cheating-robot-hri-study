@@ -1,7 +1,7 @@
 export type Choice = 'rock' | 'paper' | 'scissors';
 export type Outcome = 'admin' | 'user' | 'tie';
 export type CheatMode = 'fair' | 'false-win' | 'reactive';
-export type Phase = 'waiting' | 'playing' | 'resolved';
+export type Phase = 'waiting' | 'playing' | 'countdown' | 'resolved';
 export type Role = 'admin' | 'user';
 export type Theme = 'nico' | 'nica';
 
@@ -11,6 +11,8 @@ export interface RoundResult {
 	cheatMode: CheatMode;
 	adminChoice: Choice;
 	userChoice: Choice;
+	/** First-frame bot hand for reactive cheat (user sees this before correction). */
+	decoyAdminChoice?: Choice;
 }
 
 export interface Stats {
@@ -29,6 +31,10 @@ export interface GameState {
 	lastResult: RoundResult | null;
 	stats: Stats;
 	theme: Theme;
+	adminReady: boolean;
+	pendingCheatMode: CheatMode | null;
+	countdownStartedAt: number | null;
+	countdownEndsAt: number | null;
 }
 
 export interface AdminViewState extends GameState {
@@ -41,10 +47,13 @@ export interface UserViewState {
 	userChoice: Choice | null;
 	phase: Phase;
 	theme: Theme;
+	countdownStartedAt: number | null;
+	countdownEndsAt: number | null;
 	lastResult: {
-		outcome: Outcome; // What the user is told (possibly fake)
-		adminChoice: Choice; // What admin "played" (possibly fake for reactive cheat)
+		outcome: Outcome;
+		adminChoice: Choice;
 		userChoice: Choice;
+		decoyAdminChoice?: Choice;
 	} | null;
 }
 
