@@ -49,7 +49,7 @@
 			0 0 0 1px rgba(255, 255, 255, 0.6);
 	}
 
-@keyframes popIn {
+	@keyframes popIn {
 		from {
 			opacity: 0;
 			transform: translateX(-50%) translateY(6px) scale(0.96);

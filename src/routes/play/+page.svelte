@@ -245,7 +245,6 @@
 			<div class="pink-waiting-small">waiting for next round…</div>
 		{/if}
 		</div>
-
 	</div>
 
 	{#if state?.lastResult && state.phase === 'resolved'}
