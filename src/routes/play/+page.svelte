@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import type { Choice, UserViewState } from '$lib/types';
 	import P5Sprite from '$lib/components/P5Sprite.svelte';
 	import RpsIcon from '$lib/components/RpsIcon.svelte';
@@ -60,7 +61,7 @@
 			const h = setTimeout(() => {
 				reactiveShowTrueHand = true;
 				speechVisible = true;
-			}, 300);
+			}, 600);
 			return () => clearTimeout(h);
 		}
 		reactiveShowTrueHand = true;
@@ -154,7 +155,7 @@
 	{#if state?.phase === 'countdown' && state.countdownStartedAt != null}
 		{@const elapsed = nowMs - state.countdownStartedAt}
 		{@const cdLabel = countdownDisplay(elapsed)}
-		<div class="countdown-overlay" aria-live="polite">
+		<div class="countdown-overlay" aria-live="polite" out:fade={{ duration: 600 }}>
 			{#if cdLabel}
 				<div class="countdown-text">{cdLabel}</div>
 			{/if}
@@ -501,7 +502,7 @@
 		top: 50%;
 		transform: translateY(-50%);
 		opacity: 0;
-		transition: opacity 0.35s ease-in-out;
+		transition: opacity 0.525s ease-in-out;
 		pointer-events: none;
 	}
 

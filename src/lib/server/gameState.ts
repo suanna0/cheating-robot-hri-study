@@ -27,7 +27,8 @@ let gameState: GameState = {
 		adminWins: 0,
 		userWins: 0,
 		ties: 0,
-		cheatsUsed: 0
+		cheatsUsed: 0,
+		gamesPlayed: 0
 	}
 };
 
@@ -315,6 +316,7 @@ function finalizeAfterCountdown(): void {
 	} else {
 		gameState.stats.ties++;
 	}
+	gameState.stats.gamesPlayed++;
 
 	notifyListeners();
 }
@@ -356,7 +358,8 @@ export function resetGame(): void {
 			adminWins: 0,
 			userWins: 0,
 			ties: 0,
-			cheatsUsed: 0
+			cheatsUsed: 0,
+			gamesPlayed: 0
 		}
 	};
 	notifyListeners();

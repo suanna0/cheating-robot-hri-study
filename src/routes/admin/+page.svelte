@@ -159,6 +159,10 @@
 				<div class="header-right">
 					<div class="stat-row">
 						<div class="stat">
+							<span class="stat-label">Games</span><span class="stat-value">{state.stats.gamesPlayed}</span>
+						</div>
+						<div class="stat-divider"></div>
+						<div class="stat">
 							<span class="stat-label">Admin</span><span class="stat-value">{state.stats.adminWins}</span>
 						</div>
 						<div class="stat-divider"></div>

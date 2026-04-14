@@ -20,6 +20,7 @@ export interface Stats {
 	userWins: number;
 	ties: number;
 	cheatsUsed: number;
+	gamesPlayed: number;
 }
 
 export interface GameState {
